@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="PutZige.API/PutZige.API.csproj" />
+    <Project Path="PutZige.Application/PutZige.Application.csproj" />
+    <Project Path="PutZige.Domain/PutZige.Domain.csproj" />
+    <Project Path="PutZige.Infrastructure/PutZige.Infrastructure.csproj" />
+  </Folder>
+</Solution>
