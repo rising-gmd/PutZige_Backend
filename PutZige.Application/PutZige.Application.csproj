@@ -16,4 +16,9 @@
     <ProjectReference Include="..\PutZige.Domain\PutZige.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="DTOs\" />
+    <Folder Include="Validators\" />
+  </ItemGroup>
+
 </Project>
