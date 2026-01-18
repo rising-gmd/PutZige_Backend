@@ -1,6 +1,8 @@
+#nullable enable
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using PutZige.Application.Interfaces;
 using PutZige.Domain.Entities;
 using PutZige.Domain.Interfaces;
 using BCrypt.Net;
@@ -10,7 +12,7 @@ namespace PutZige.Application.Services
     /// <summary>
     /// Service for user registration and management.
     /// </summary>
-    public class UserService
+    public class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
         private readonly IUnitOfWork _unitOfWork;

@@ -4,6 +4,7 @@ using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using PutZige.Application.Services;
+using PutZige.Application.Interfaces;
 
 namespace PutZige.Application;
 
@@ -16,6 +17,7 @@ public static class DependencyInjection
 
         // Register application services
         services.AddScoped<UserService>();
+        services.AddScoped<IUserService, UserService>();
 
         return services;
     }
