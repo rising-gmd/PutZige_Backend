@@ -25,7 +25,6 @@ public static class DependencyInjection
     /// </summary>
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
-        // Bind DatabaseSettings using options pattern and validate with FluentValidation
         services.Configure<DatabaseSettings>(configuration.GetSection(DatabaseSettings.SectionName));
         services.AddSingleton<IValidator<DatabaseSettings>, DatabaseSettingsValidator>();
         services.AddSingleton<IValidateOptions<DatabaseSettings>, DatabaseSettingsOptionsValidator>();
