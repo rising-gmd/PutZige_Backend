@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using PutZige.Application.Common.Messages;
 
 namespace PutZige.Application.DTOs.Common
 {
@@ -50,7 +51,7 @@ namespace PutZige.Application.DTOs.Common
             {
                 IsSuccess = true,
                 Data = data,
-                Message = message,
+                Message = string.IsNullOrWhiteSpace(message) ? SuccessMessages.General.OperationSuccessful : message,
                 StatusCode = 200,
                 Timestamp = DateTime.UtcNow
             };
@@ -63,7 +64,7 @@ namespace PutZige.Application.DTOs.Common
             {
                 IsSuccess = false,
                 Data = default,
-                Message = message,
+                Message = string.IsNullOrWhiteSpace(message) ? ErrorMessages.General.InternalServerError : message,
                 Errors = errors,
                 StatusCode = statusCode,
                 Timestamp = DateTime.UtcNow

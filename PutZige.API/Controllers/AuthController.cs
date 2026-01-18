@@ -11,6 +11,7 @@ using PutZige.Domain.Entities;
 using FluentValidation;
 using PutZige.Application.Extensions;
 using System.Collections.Generic;
+using PutZige.Application.Common.Messages;
 
 namespace PutZige.API.Controllers
 {
@@ -19,14 +20,14 @@ namespace PutZige.API.Controllers
     public sealed class AuthController : ControllerBase
     {
         private readonly IUserService _userService;
-        private readonly ILogger<AuthController> _logger;
+        private readonly ILogger<AuthController>? _logger;
         private readonly IValidator<RegisterUserRequest> _validator;
 
-        public AuthController(IUserService userService, ILogger<AuthController> logger, IValidator<RegisterUserRequest> validator)
+        public AuthController(IUserService userService, ILogger<AuthController>? logger = null, IValidator<RegisterUserRequest> validator = null!)
         {
             _userService = userService;
             _logger = logger;
-            _validator = validator;
+            _validator = validator ?? throw new ArgumentNullException(nameof(validator));
         }
 
         /// <summary>
@@ -42,15 +43,14 @@ namespace PutZige.API.Controllers
                 var errors = validationResult.ToDictionary();
                 var errorsDict = new Dictionary<string, string[]>(errors);
 
-                _logger.LogWarning("Registration validation failed for email: {Email}. Errors: {@Errors}", 
-                    request.Email, errorsDict);
+                _logger?.LogWarning("Validation failed for {RequestType} - Email: {Email}, Errors: {@Errors}", nameof(RegisterUserRequest), request.Email, errorsDict);
                 return BadRequest(ApiResponse<RegisterUserResponse>.Error(
-                    "Validation failed. Please check your input.", 
-                    errorsDict, 
+                    ErrorMessages.Validation.ValidationFailed,
+                    errorsDict,
                     400));
             }
 
-            _logger.LogInformation("User registration attempt - Email: {Email}", request.Email);
+            _logger?.LogInformation("User registration attempt - Email: {Email}", request.Email);
 
             var user = await _userService.RegisterUserAsync(request.Email, request.Username, request.DisplayName, request.Password, ct);
 
@@ -64,9 +64,9 @@ namespace PutZige.API.Controllers
                 CreatedAt = user.CreatedAt
             };
 
-            _logger.LogInformation("User registration successful - UserId: {UserId}, Email: {Email}", user.Id, user.Email);
+            _logger?.LogInformation("User registration successful - UserId: {UserId}, Email: {Email}", user.Id, user.Email);
 
-            return CreatedAtAction(nameof(Register), new { id = user.Id }, ApiResponse<RegisterUserResponse>.Success(response, "Registration successful. Please check your email to verify your account."));
+            return CreatedAtAction(nameof(Register), new { id = user.Id }, ApiResponse<RegisterUserResponse>.Success(response, SuccessMessages.Authentication.RegistrationSuccessful));
         }
     }
 }

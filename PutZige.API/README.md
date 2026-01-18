@@ -2,6 +2,31 @@
 
 HTTP API for PutZige. Hosts controllers, middleware and application wiring.
 
+## Configuration Management
+
+The API uses environment-specific `appsettings.json` files. The configuration hierarchy is:
+- `appsettings.json` (base) - contains shared defaults
+- `appsettings.{Environment}.json` - environment overrides (e.g., Development, Test, QA, Staging, Production, Release)
+
+Files present:
+- `appsettings.json` - base configuration
+- `appsettings.Development.json` - development overrides
+- `appsettings.Test.json` - test environment overrides
+- `appsettings.QA.json` - QA environment overrides
+- `appsettings.Staging.json` - staging environment overrides
+- `appsettings.Production.json` - production overrides
+- `appsettings.Release.json` - release build overrides
+
+How it works:
+- ASP.NET Core loads `appsettings.json` first and then overlays environment-specific files based on `ASPNETCORE_ENVIRONMENT`.
+- Do not commit secrets. Use User Secrets for local development and Azure Key Vault or similar for production.
+
+Adding new configuration:
+- Add the key to `appsettings.json` and optionally override in environment files.
+- Use Options Pattern (`IOptions<T>`) to bind configuration to strongly typed classes.
+
+---
+
 ## Purpose
 Expose application use-cases over HTTP; handle request/response, DI and middleware pipeline.
 
@@ -15,7 +40,6 @@ PutZige.API/
 ?? Properties/
 ?? appsettings.json
 ?? Program.cs
-?? PutZige.API.http
 ?? README.md
 ```
 
@@ -39,11 +63,3 @@ PutZige.API/
 ## Swagger / API docs
 - Swagger is enabled in Development environment via `Program.cs`
 - Default UI: `http://localhost:{port}/swagger` when running in Development
-
-## Environment-specific configs
-- `appsettings.Development.json` and `appsettings.Production.json` supported
-- Use environment variables to override connection strings and secrets
-
-## Recommendations
-- Use `IUnitOfWork` in services to group multiple repository calls and commit once.
-- Use tracked entities (fetched without `AsNoTracking`) when performing multiple updates in a single unit of work.

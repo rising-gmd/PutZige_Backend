@@ -1,6 +1,8 @@
 #nullable enable
 using FluentValidation;
 using PutZige.Application.DTOs.Auth;
+using PutZige.Application.Common.Constants;
+using PutZige.Application.Common.Messages;
 
 namespace PutZige.Application.Validators.Auth
 {
@@ -12,31 +14,30 @@ namespace PutZige.Application.Validators.Auth
         public RegisterUserRequestValidator()
         {
             RuleFor(x => x.Email)
-                .NotEmpty()
-                .EmailAddress()
-                .MaximumLength(255);
+                .NotEmpty().WithMessage(ErrorMessages.Validation.EmailRequired)
+                .EmailAddress().WithMessage(ErrorMessages.Validation.EmailInvalidFormat)
+                .MaximumLength(AppConstants.Validation.MaxEmailLength).WithMessage(ErrorMessages.Validation.EmailTooLong);
 
             RuleFor(x => x.Username)
-                .NotEmpty()
-                .Length(3, 30)
-                .Matches("^[a-zA-Z0-9_]+$")
-                .WithMessage("Username must be alphanumeric with optional underscores and between 3 and 30 characters.");
+                .NotEmpty().WithMessage(ErrorMessages.Validation.UsernameRequired)
+                .Length(AppConstants.Validation.MinUsernameLength, AppConstants.Validation.MaxUsernameLength).WithMessage(ErrorMessages.Validation.UsernameInvalidLength)
+                .Matches(AppConstants.Validation.UsernameRegexPattern).WithMessage(ErrorMessages.Validation.UsernameInvalidCharacters);
 
             RuleFor(x => x.DisplayName)
-                .NotEmpty()
-                .Length(2, 50);
+                .NotEmpty().WithMessage(ErrorMessages.Validation.DisplayNameRequired)
+                .Length(AppConstants.Validation.MinDisplayNameLength, AppConstants.Validation.MaxDisplayNameLength).WithMessage(ErrorMessages.Validation.DisplayNameInvalidLength);
 
             RuleFor(x => x.Password)
-                .NotEmpty()
-                .MinimumLength(8)
-                .Matches("[A-Z]").WithMessage("Password must contain at least one uppercase letter.")
-                .Matches("[a-z]").WithMessage("Password must contain at least one lowercase letter.")
-                .Matches("[0-9]").WithMessage("Password must contain at least one digit.")
-                .Matches(@"[!@#$%^&*()_+\-=[\]{}|;:,.<>?]").WithMessage("Password must contain at least one special character.");
+                .NotEmpty().WithMessage(ErrorMessages.Validation.PasswordRequired)
+                .MinimumLength(AppConstants.Validation.MinPasswordLength).WithMessage(ErrorMessages.Validation.PasswordTooShort)
+                .Matches(AppConstants.Validation.PasswordUppercaseRegex).WithMessage(ErrorMessages.Validation.PasswordMissingUppercase)
+                .Matches(AppConstants.Validation.PasswordLowercaseRegex).WithMessage(ErrorMessages.Validation.PasswordMissingLowercase)
+                .Matches(AppConstants.Validation.PasswordDigitRegex).WithMessage(ErrorMessages.Validation.PasswordMissingDigit)
+                .Matches(AppConstants.Validation.PasswordSpecialCharRegex).WithMessage(ErrorMessages.Validation.PasswordMissingSpecialChar);
 
             RuleFor(x => x.ConfirmPassword)
-                .NotEmpty()
-                .Equal(x => x.Password).WithMessage("Passwords do not match.");
+                .NotEmpty().WithMessage(ErrorMessages.Validation.ConfirmPasswordRequired)
+                .Equal(x => x.Password).WithMessage(ErrorMessages.Validation.PasswordsDoNotMatch);
         }
     }
 }

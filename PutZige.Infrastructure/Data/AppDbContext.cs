@@ -86,7 +86,7 @@ public class AppDbContext : DbContext
         var utcNow = DateTime.UtcNow;
 
         // Iterate entries for BaseEntity types only
-        var entries = ChangeTracker.Entries<BaseEntity?>();
+        var entries = ChangeTracker.Entries<BaseEntity>();
 
         foreach (var entry in entries)
         {

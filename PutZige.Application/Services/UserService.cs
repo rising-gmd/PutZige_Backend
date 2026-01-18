@@ -7,6 +7,9 @@ using PutZige.Domain.Entities;
 using PutZige.Domain.Interfaces;
 using BCrypt.Net;
 using System.Security.Cryptography;
+using PutZige.Application.Common.Constants;
+using PutZige.Application.Common.Messages;
+using Microsoft.Extensions.Logging;
 
 namespace PutZige.Application.Services
 {
@@ -17,14 +20,16 @@ namespace PutZige.Application.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ILogger<UserService>? _logger;
 
-        public UserService(IUserRepository userRepository, IUnitOfWork unitOfWork)
+        public UserService(IUserRepository userRepository, IUnitOfWork unitOfWork, ILogger<UserService>? logger = null)
         {
             ArgumentNullException.ThrowIfNull(userRepository);
             ArgumentNullException.ThrowIfNull(unitOfWork);
 
             _userRepository = userRepository;
             _unitOfWork = unitOfWork;
+            _logger = logger;
         }
 
         /// <summary>
@@ -37,38 +42,46 @@ namespace PutZige.Application.Services
             string password,
             CancellationToken ct = default)
         {
-            if (string.IsNullOrWhiteSpace(email)) throw new ArgumentException("Email is required", nameof(email));
-            if (string.IsNullOrWhiteSpace(username)) throw new ArgumentException("Username is required", nameof(username));
-            if (string.IsNullOrWhiteSpace(password)) throw new ArgumentException("Password is required", nameof(password));
+            if (string.IsNullOrWhiteSpace(email)) throw new ArgumentException(ErrorMessages.Validation.EmailRequired, nameof(email));
+            if (string.IsNullOrWhiteSpace(username)) throw new ArgumentException(ErrorMessages.Validation.UsernameRequired, nameof(username));
+            if (string.IsNullOrWhiteSpace(password)) throw new ArgumentException(ErrorMessages.Validation.PasswordRequired, nameof(password));
+
+            _logger?.LogInformation("User registration attempt - Email: {Email}", email);
 
             // Check availability
             if (await _userRepository.IsEmailTakenAsync(email, ct))
-                throw new InvalidOperationException("Email already taken");
+            {
+                _logger?.LogWarning("Registration failed - Email already exists: {Email}", email);
+                throw new InvalidOperationException(ErrorMessages.Authentication.EmailAlreadyTaken);
+            }
 
             if (await _userRepository.IsUsernameTakenAsync(username, ct))
-                throw new InvalidOperationException("Username already taken");
+            {
+                _logger?.LogWarning("Registration failed - Username already exists: {Username}", username);
+                throw new InvalidOperationException(ErrorMessages.Authentication.UsernameAlreadyTaken);
+            }
 
             // Create a cryptographically secure verification token
             var tokenBytes = RandomNumberGenerator.GetBytes(32);
             var token = Convert.ToBase64String(tokenBytes).Replace("+", "-").Replace("/", "_").TrimEnd('=');
-
-            // Use a reasonable work factor; consider making this configurable
-            const int bcryptWorkFactor = 12;
 
             var user = new User
             {
                 Email = email,
                 Username = username,
                 DisplayName = displayName,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password, bcryptWorkFactor),
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password, AppConstants.Security.BcryptWorkFactor),
                 EmailVerificationToken = token,
-                EmailVerificationTokenExpiry = DateTime.UtcNow.AddDays(1),
+                EmailVerificationTokenExpiry = DateTime.UtcNow.AddDays(AppConstants.Security.EmailVerificationTokenExpirationDays),
                 IsEmailVerified = false,
                 CreatedAt = DateTime.UtcNow
             };
 
+            _logger?.LogInformation("Creating user entity - Email: {Email}", email);
             await _userRepository.AddAsync(user, ct);
+            _logger?.LogInformation("Saving changes to database");
             await _unitOfWork.SaveChangesAsync(ct);
+            _logger?.LogInformation("User entity created - UserId: {UserId}", user.Id);
 
             // TODO: Send verification email to {user.Email} with token {user.EmailVerificationToken}
 
@@ -87,7 +100,7 @@ namespace PutZige.Application.Services
         public async Task SoftDeleteUserAsync(Guid userId, CancellationToken ct = default)
         {
             var user = await _userRepository.GetByIdAsync(userId, ct);
-            if (user == null) throw new KeyNotFoundException("User not found");
+            if (user == null) throw new KeyNotFoundException(ErrorMessages.General.ResourceNotFound);
             _userRepository.Delete(user);
             await _unitOfWork.SaveChangesAsync(ct);
         }

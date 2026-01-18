@@ -41,6 +41,9 @@
 		<!-- Testcontainers -->
 		<PackageVersion Include="Testcontainers" Version="4.10.0" />
 		<PackageVersion Include="Testcontainers.MsSql" Version="4.10.0" />
+
+		<!-- Logging -->
+		<PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.2" />
 	</ItemGroup>
 	
 </Project>

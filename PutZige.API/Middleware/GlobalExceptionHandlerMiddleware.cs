@@ -9,6 +9,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using PutZige.Application.DTOs.Common;
+using PutZige.Application.Common.Messages;
 
 namespace PutZige.API.Middleware
 {
@@ -43,11 +44,11 @@ namespace PutZige.API.Middleware
 
                 if ((int)status >= 500)
                 {
-                    _logger.LogError(ex, "Unhandled exception occurred - Type: {ExceptionType}", ex.GetType().Name);
+                    _logger.LogError(ex, "Unhandled exception occurred - Type: {ExceptionType}, Message: {Message}", ex.GetType().Name, ex.Message);
                 }
                 else
                 {
-                    _logger.LogWarning(ex, "Client error - Type: {ExceptionType}, Path: {Path}", ex.GetType().Name, context.Request.Path);
+                    _logger.LogWarning(ex, "Client error - Type: {ExceptionType}, Message: {Message}, Path: {Path}", ex.GetType().Name, ex.Message, context.Request.Path);
                 }
 
                 context.Response.ContentType = "application/json";
@@ -63,13 +64,13 @@ namespace PutZige.API.Middleware
         {
             return ex switch
             {
-                ValidationException ve => (HttpStatusCode.BadRequest, "Validation failed.", BuildValidationErrors(ve)),
+                ValidationException ve => (HttpStatusCode.BadRequest, ErrorMessages.Validation.ValidationFailed, BuildValidationErrors(ve)),
                 InvalidOperationException ioe => (HttpStatusCode.BadRequest, ioe.Message, null),
-                KeyNotFoundException knf => (HttpStatusCode.NotFound, knf.Message, null),
-                UnauthorizedAccessException una => (HttpStatusCode.Unauthorized, "Unauthorized.", null),
+                KeyNotFoundException knf => (HttpStatusCode.NotFound, ErrorMessages.General.ResourceNotFound, null),
+                UnauthorizedAccessException una => (HttpStatusCode.Unauthorized, ErrorMessages.General.UnauthorizedAccess, null),
                 ArgumentNullException an => (HttpStatusCode.BadRequest, an.Message, null),
                 ArgumentException ae => (HttpStatusCode.BadRequest, ae.Message, null),
-                _ => (HttpStatusCode.InternalServerError, "An internal error occurred. Please try again later.", null)
+                _ => (HttpStatusCode.InternalServerError, ErrorMessages.General.InternalServerError, null)
             };
         }
 
