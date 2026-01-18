@@ -24,4 +24,8 @@
     <ProjectReference Include="..\PutZige.Application\PutZige.Application.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Data\Migrations\" />
+  </ItemGroup>
+
 </Project>

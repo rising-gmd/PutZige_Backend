@@ -48,6 +48,7 @@ namespace PutZige.Infrastructure.Data
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             var entries = ChangeTracker.Entries<BaseEntity>();
+
             foreach (var entry in entries)
             {
                 switch (entry.State)
@@ -66,6 +67,7 @@ namespace PutZige.Infrastructure.Data
                         break;
                 }
             }
+
             return await base.SaveChangesAsync(cancellationToken);
         }
     }
