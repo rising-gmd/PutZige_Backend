@@ -2,7 +2,7 @@ namespace PutZige.Infrastructure.Settings;
 
 public sealed class DatabaseSettings
 {
-    public const string SectionName = "Database";
+    public const string SectionName = "DatabaseSettings";
 
     public required string ConnectionString { get; init; }
 

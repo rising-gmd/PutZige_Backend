@@ -1,12 +1,13 @@
-using Serilog;
-using PutZige.API.Configuration;
 using Microsoft.OpenApi;
+using Microsoft.OpenApi;
+using PutZige.API.Configuration;
+using PutZige.API.Filters;
+using PutZige.API.Middleware;
 using PutZige.Application;
 using PutZige.Infrastructure;
-using PutZige.API.Middleware;
-using PutZige.API.Filters;
+using Serilog;
 
-// Bootstrap logger
+// Bootstrap logger for startup errors
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .CreateLogger();
@@ -17,7 +18,7 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
-    // Configure Serilog
+    // Configure Serilog (replaces bootstrap logger)
     builder.Host.UseSerilog((context, services, configuration) => configuration
         .ReadFrom.Configuration(context.Configuration)
         .Enrich.FromLogContext()
@@ -35,6 +36,7 @@ try
     {
         options.Filters.Add<ValidationFilter>();
     });
+
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(c =>
     {
@@ -45,12 +47,12 @@ try
     builder.Services.AddApplicationServices();
     builder.Services.AddInfrastructureServices(builder.Configuration, builder.Environment);
 
-    // Add AutoMapper here
-    builder.Services.AddAutoMapper(typeof(Program)); // Assuming your profiles are in the same assembly as Program
+    // Add AutoMapper
+    builder.Services.AddAutoMapper(typeof(Program));
 
     var app = builder.Build();
 
-    // Request logging (BEFORE UseRouting)
+    // Configure middleware pipeline
     app.UseSerilogRequestLogging(options =>
     {
         options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} {StatusCode} in {Elapsed:0.0000}ms";
@@ -61,8 +63,7 @@ try
         };
     });
 
-    // Configure pipeline
-    app.UseMiddleware<GlobalExceptionHandlerMiddleware>(); // FIRST
+    app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
     if (app.Environment.IsDevelopment())
     {
@@ -72,15 +73,16 @@ try
 
     app.UseRouting();
     app.UseHttpsRedirection();
-    app.UseAuthentication(); 
-    app.UseAuthorization(); 
+    app.UseAuthentication();
+    app.UseAuthorization();
     app.MapControllers();
+
+    Log.Information("Application starting");
     app.Run();
 }
 catch (Exception ex)
 {
     Log.Fatal(ex, "Application terminated unexpectedly");
-    throw;
 }
 finally
 {

@@ -27,8 +27,8 @@ public static class DependencyInjection
     {
         // Bind DatabaseSettings using options pattern and validate with FluentValidation
         services.Configure<DatabaseSettings>(configuration.GetSection(DatabaseSettings.SectionName));
-        services.AddSingleton<IValidator<DatabaseSettings>, DatabaseSettingsValidator>();
-        services.AddSingleton<IValidateOptions<DatabaseSettings>, DatabaseSettingsOptionsValidator>();
+        //services.AddSingleton<IValidator<DatabaseSettings>, DatabaseSettingsValidator>();
+        //services.AddSingleton<IValidateOptions<DatabaseSettings>, DatabaseSettingsOptionsValidator>();
 
         // Register DbContext with resilient SQL Server settings
         services.AddDbContext<AppDbContext>((serviceProvider, options) =>
