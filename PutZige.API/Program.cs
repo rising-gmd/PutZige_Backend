@@ -28,8 +28,7 @@ try
         .Enrich.WithProperty("Environment", context.HostingEnvironment.EnvironmentName));
 
     // Register Options
-    builder.Services.Configure<LoggingSettings>(
-        builder.Configuration.GetSection(LoggingSettings.SectionName));
+    builder.Services.Configure<LoggingSettings>(builder.Configuration.GetSection(LoggingSettings.SectionName));
 
     // Add services
     builder.Services.AddControllers(options =>
