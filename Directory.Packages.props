@@ -4,6 +4,8 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Core framework packages -->
+    <PackageVersion Include="AutoMapper" Version="16.0.0" />
+    <PackageVersion Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.2" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.2" />
     <PackageVersion Include="Microsoft.Extensions.Options" Version="10.0.2" />

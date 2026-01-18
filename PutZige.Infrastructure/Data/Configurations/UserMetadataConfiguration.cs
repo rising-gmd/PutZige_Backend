@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PutZige.Domain.Entities;
+using PutZige.Application.Common.Constants;
 
 namespace PutZige.Infrastructure.Data.Configurations
 {
@@ -13,7 +14,7 @@ namespace PutZige.Infrastructure.Data.Configurations
 
             builder.HasKey(m => m.Id);
 
-            builder.Property(m => m.Metadata).HasMaxLength(4000);
+            builder.Property(m => m.Metadata).HasMaxLength(AppConstants.Validation.MaxLongTextLength); // 5000
 
             builder.HasIndex(m => m.UserId).IsUnique();
 

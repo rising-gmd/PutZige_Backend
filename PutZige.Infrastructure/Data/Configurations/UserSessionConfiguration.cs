@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PutZige.Domain.Entities;
+using PutZige.Application.Common.Constants;
 
 namespace PutZige.Infrastructure.Data.Configurations
 {
@@ -14,8 +15,8 @@ namespace PutZige.Infrastructure.Data.Configurations
             builder.HasKey(s => s.Id);
 
             builder.Property(s => s.IsOnline).HasDefaultValue(false);
-            builder.Property(s => s.DeviceTokens).HasMaxLength(2048);
-            builder.Property(s => s.CurrentRefreshToken).HasMaxLength(512);
+            builder.Property(s => s.DeviceTokens).HasMaxLength(AppConstants.Validation.MaxLongTextLength); // 5000
+            builder.Property(s => s.CurrentRefreshToken).HasMaxLength(1024); // JWT refresh tokens can be long
 
             builder.HasIndex(s => s.UserId).IsUnique();
             builder.HasIndex(s => s.LastActiveAt);

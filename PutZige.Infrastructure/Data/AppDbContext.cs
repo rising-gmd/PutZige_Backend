@@ -100,7 +100,6 @@ public class AppDbContext : DbContext
                         entry.Entity.Id = Guid.NewGuid();
 
                     entry.Entity.CreatedAt = utcNow;
-                    entry.Entity.IsDeleted = false;
                     break;
 
                 case EntityState.Modified:
@@ -108,7 +107,6 @@ public class AppDbContext : DbContext
                     break;
 
                 case EntityState.Deleted:
-                    // Convert hard delete to soft delete
                     entry.State = EntityState.Modified;
                     entry.Entity.IsDeleted = true;
                     entry.Entity.DeletedAt = utcNow;

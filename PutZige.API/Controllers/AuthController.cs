@@ -38,16 +38,16 @@ namespace PutZige.API.Controllers
         {
             // Manual validation
             var validationResult = await _validator.ValidateAsync(request, ct);
+
             if (!validationResult.IsValid)
             {
                 var errors = validationResult.ToDictionary();
+
                 var errorsDict = new Dictionary<string, string[]>(errors);
 
                 _logger?.LogWarning("Validation failed for {RequestType} - Email: {Email}, Errors: {@Errors}", nameof(RegisterUserRequest), request.Email, errorsDict);
-                return BadRequest(ApiResponse<RegisterUserResponse>.Error(
-                    ErrorMessages.Validation.ValidationFailed,
-                    errorsDict,
-                    400));
+
+                return BadRequest(ApiResponse<RegisterUserResponse>.Error(ErrorMessages.Validation.ValidationFailed, errorsDict, 400));
             }
 
             _logger?.LogInformation("User registration attempt - Email: {Email}", request.Email);

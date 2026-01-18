@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PutZige.Domain.Entities;
+using PutZige.Application.Common.Constants;
 
 namespace PutZige.Infrastructure.Data.Configurations
 {
@@ -15,18 +16,18 @@ namespace PutZige.Infrastructure.Data.Configurations
             builder.ToTable("Users");
 
             // Authentication
-            builder.Property(u => u.Email).IsRequired().HasMaxLength(256);
+            builder.Property(u => u.Email).IsRequired().HasMaxLength(AppConstants.Validation.MaxEmailLength); // 255
             builder.HasIndex(u => u.Email).IsUnique();
-            builder.Property(u => u.PasswordHash).IsRequired();
+            builder.Property(u => u.PasswordHash).IsRequired().HasMaxLength(256);
             builder.Property(u => u.IsEmailVerified).HasDefaultValue(false);
             builder.Property(u => u.EmailVerificationToken).HasMaxLength(256);
 
             // Profile
-            builder.Property(u => u.Username).IsRequired().HasMaxLength(50);
+            builder.Property(u => u.Username).IsRequired().HasMaxLength(AppConstants.Validation.MaxUsernameLength); // 50
             builder.HasIndex(u => u.Username).IsUnique();
-            builder.Property(u => u.DisplayName).IsRequired().HasMaxLength(100);
-            builder.Property(u => u.Bio).HasMaxLength(500);
-            builder.Property(u => u.ProfilePictureUrl).HasMaxLength(512);
+            builder.Property(u => u.DisplayName).IsRequired().HasMaxLength(AppConstants.Validation.MaxDisplayNameLength); // 100
+            builder.Property(u => u.Bio).HasMaxLength(AppConstants.Validation.MaxShortTextLength); // 500
+            builder.Property(u => u.ProfilePictureUrl).HasMaxLength(AppConstants.Validation.MaxUrlLength); // 2048
 
             // Password Reset
             builder.Property(u => u.PasswordResetToken).HasMaxLength(256);
