@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Packages.props" />
+  </Folder>
   <Folder Name="/src/" />
   <Folder Name="/src/Core/">
     <Project Path="PutZige.Application/PutZige.Application.csproj" />
@@ -9,5 +12,11 @@
   </Folder>
   <Folder Name="/src/Presentation/">
     <Project Path="PutZige.API/PutZige.API.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="PutZige.API.Tests/PutZige.API.Tests.csproj" Id="74b2e26c-680d-43e3-932c-929274bc9310" />
+    <Project Path="PutZige.Application.Tests/PutZige.Application.Tests.csproj" Id="b2add8fc-0448-46c0-a17a-7e4dfbdf877a" />
+    <Project Path="PutZige.Domain.Tests/PutZige.Domain.Tests.csproj" Id="fc7ca0d7-93fa-4b16-8594-d34928600fe1" />
+    <Project Path="PutZige.Infrastructure.Tests/PutZige.Infrastructure.Tests.csproj" Id="a9e16f0f-1ef1-4e7c-9378-e1569a2f3347" />
   </Folder>
 </Solution>
