@@ -361,3 +361,77 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# -----------------------------------------------------------------------------
+# Added ignore rules (added by Principal Engineer)
+# -----------------------------------------------------------------------------
+# -------------------------
+# Added: Serilog Logs
+# -------------------------
+# Serilog Logs
+logs/
+*.log
+
+# -------------------------
+# Added: Sensitive Configuration
+# -------------------------
+# Sensitive Configuration Files
+appsettings.Development.json
+appsettings.Staging.json
+appsettings.Production.json
+appsettings.Test.json
+**/appsettings.*.json
+# Keep base template
+!appsettings.json
+
+# -------------------------
+# Added: Local Database Files
+# -------------------------
+# Local Database
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# -------------------------
+# Added: JetBrains Rider
+# -------------------------
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# -------------------------
+# Added: VS Code
+# -------------------------
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# -------------------------
+# Added: macOS
+# -------------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# -------------------------
+# Added: Environment Variables
+# -------------------------
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# -------------------------
+# Added: Development Certificates
+# -------------------------
+# Development Certificates
+*.pfx
+*.p12
+*.key
+*.pem
