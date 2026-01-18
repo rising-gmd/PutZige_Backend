@@ -4,6 +4,7 @@ using Microsoft.OpenApi;
 using PutZige.Application;
 using PutZige.Infrastructure;
 using PutZige.API.Middleware;
+using PutZige.API.Filters;
 
 // Bootstrap logger
 Log.Logger = new LoggerConfiguration()
@@ -30,7 +31,10 @@ try
         builder.Configuration.GetSection(LoggingSettings.SectionName));
 
     // Add services
-    builder.Services.AddControllers();
+    builder.Services.AddControllers(options =>
+    {
+        options.Filters.Add<ValidationFilter>();
+    });
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(c =>
     {
@@ -40,6 +44,9 @@ try
     // Register layer services
     builder.Services.AddApplicationServices();
     builder.Services.AddInfrastructureServices(builder.Configuration, builder.Environment);
+
+    // Add AutoMapper here
+    builder.Services.AddAutoMapper(typeof(Program)); // Assuming your profiles are in the same assembly as Program
 
     var app = builder.Build();
 

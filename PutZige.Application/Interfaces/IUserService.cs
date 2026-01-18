@@ -2,7 +2,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using PutZige.Domain.Entities;
+using PutZige.Application.DTOs.Auth;
 
 namespace PutZige.Application.Interfaces
 {
@@ -12,9 +12,9 @@ namespace PutZige.Application.Interfaces
     public interface IUserService
     {
         /// <summary>
-        /// Registers a new user with validation and hashing.
+        /// Registers a new user with validation and hashing and returns a response DTO.
         /// </summary>
-        Task<User> RegisterUserAsync(
+        Task<RegisterUserResponse> RegisterUserAsync(
             string email,
             string username,
             string displayName,
@@ -24,13 +24,13 @@ namespace PutZige.Application.Interfaces
         /// <summary>
         /// Gets a user by email.
         /// </summary>
-        Task<User?> GetUserByEmailAsync(string email, CancellationToken ct = default);
+        Task<RegisterUserResponse?> GetUserByEmailAsync(string email, CancellationToken ct = default);
 
         /// <summary>
         /// Soft deletes a user by id.
         /// </summary>
         Task SoftDeleteUserAsync(Guid userId, CancellationToken ct = default);
 
-        // Future: Task<(User User, string Token)> LoginAsync(string email, string password, CancellationToken ct = default);
+        // Future: Task<(RegisterUserResponse User, string Token)> LoginAsync(string email, string password, CancellationToken ct = default);
     }
 }

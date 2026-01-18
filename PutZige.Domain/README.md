@@ -54,8 +54,6 @@ Exact relative paths (copy/paste):
 - `PutZige.Domain/Interfaces/IUnitOfWork.cs`
 - `PutZige.Domain/Interfaces/IUserRepository.cs`
 
-If you need to inspect any of the above files, open the path shown.
-
 ## How to reference / import
 
 From another project in this solution add a project reference:
@@ -133,4 +131,5 @@ Note: inspect `PutZige.Domain/Interfaces/IUserRepository.cs` for the exact metho
 - This project is intentionally minimal — keep it focused on plain types and interfaces. Do not introduce infrastructure details or third-party dependencies here unless absolutely required.
 - Use file-scoped namespaces and modern C# idioms consistent with the solution.
 - When adding public API surface, prefer stable method names and keep compatibility in mind (other projects depend on these contracts).
+- Controllers and API code should not consume domain entities directly; map domain entities to DTOs in the Application layer before returning data to controllers or external consumers.
 - If you want me to remove any remaining DDS/architectural wording from other READMEs, tell me which file(s) and I'll update them.

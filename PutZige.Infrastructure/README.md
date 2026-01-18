@@ -10,6 +10,7 @@ Infrastructure layer implementing data access, repository implementations, and e
 - [Migrations](#migrations)
 - [Configuration](#configuration)
 - [Service registration](#service-registration)
+- [Mapping guidance](#mapping-guidance)
 - [Dependencies](#dependencies)
 - [Usage examples](#usage-examples)
 - [Related READMEs](#related-readmes)
@@ -74,6 +75,11 @@ services.AddInfrastructure(configuration);
 ```
 
 `AddInfrastructure` method is expected at `PutZige.Infrastructure/DependencyInjection.cs` and registers `ApplicationDbContext`, repositories, and external services.
+
+## Mapping guidance
+
+- The Infrastructure layer should work with domain entities and persistence models only. Mapping between domain entities and DTOs is the responsibility of the Application layer via AutoMapper profiles.
+- Do not expose EF Core tracked entities directly to the API layer. If projection is required at query time, prefer repository methods that return DTOs or use AutoMapper projections in the Application layer.
 
 ## Dependencies
 Check `PutZige.Infrastructure/PutZige.Infrastructure.csproj` for exact PackageReference entries. Common packages used here:

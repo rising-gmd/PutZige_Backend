@@ -47,7 +47,7 @@ Exact paths:
 ## Endpoints
 
 ### Authentication
-- `POST /api/auth/register` — User registration (expected handler: `PutZige.Application/UseCases/RegisterUser`)
+- `POST /api/auth/register` — User registration (handler: `PutZige.Application.Services.UserService` or `PutZige.Application/UseCases/RegisterUser`)
 - `POST /api/auth/login` — User login
 - `POST /api/auth/refresh` — Refresh token
 
@@ -102,6 +102,12 @@ Connection string key: `ConnectionStrings:DefaultConnection`.
 7. Controllers
 
 Adjust ordering in `PutZige.API/Program.cs` if your project shows a different pipeline.
+
+## Developer guidance: DI and mapping
+
+- The API leverages the Application layer to register services and cross-cutting behavior. `PutZige.Application` registers AutoMapper profiles and application services via `AddApplicationServices`.
+- Controllers should accept and return DTOs defined by the Application layer and should not expose domain entities from `PutZige.Domain`.
+- Validation is performed using `FluentValidation` in the Application layer; controllers perform model validation and translate errors into `ApiResponse<T>` error payloads.
 
 ## Run locally
 
