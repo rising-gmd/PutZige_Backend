@@ -16,10 +16,7 @@ namespace PutZige.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructureServices(
-        this IServiceCollection services,
-        IConfiguration configuration,
-        IHostEnvironment environment)
+    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
         // Register and validate DatabaseSettings
         services.Configure<DatabaseSettings>(configuration.GetSection(DatabaseSettings.SectionName));

@@ -18,4 +18,9 @@
     <ProjectReference Include="..\PutZige.Infrastructure\PutZige.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Controllers\" />
+    <Folder Include="Middleware\" />
+  </ItemGroup>
+
 </Project>
