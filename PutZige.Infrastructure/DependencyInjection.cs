@@ -1,5 +1,4 @@
-// File: src/PutZige.Infrastructure/DependencyInjection.cs
-
+#nullable enable
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -10,33 +9,32 @@ using PutZige.Domain.Interfaces;
 using PutZige.Infrastructure.Data;
 using PutZige.Infrastructure.Repositories;
 using PutZige.Infrastructure.Settings;
+using PutZige.Infrastructure.DependencyInjectionHelpers;
+using System;
 using System.Linq;
 
 namespace PutZige.Infrastructure;
 
+/// <summary>
+/// Registers infrastructure services into the DI container.
+/// </summary>
 public static class DependencyInjection
 {
+    /// <summary>
+    /// Adds infrastructure services such as DbContext, repositories and settings validators.
+    /// </summary>
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
-        // Register and validate DatabaseSettings
+        // Bind DatabaseSettings using options pattern and validate with FluentValidation
         services.Configure<DatabaseSettings>(configuration.GetSection(DatabaseSettings.SectionName));
         services.AddSingleton<IValidator<DatabaseSettings>, DatabaseSettingsValidator>();
+        services.AddSingleton<IValidateOptions<DatabaseSettings>, DatabaseSettingsOptionsValidator>();
 
-        // Validate settings on startup
-        var serviceProvider = services.BuildServiceProvider();
-        var dbSettings = serviceProvider.GetRequiredService<IOptions<DatabaseSettings>>().Value;
-        var validator = serviceProvider.GetRequiredService<IValidator<DatabaseSettings>>();
-        var validationResult = validator.Validate(dbSettings);
-
-        if (!validationResult.IsValid)
+        // Register DbContext with resilient SQL Server settings
+        services.AddDbContext<AppDbContext>((serviceProvider, options) =>
         {
-            var errors = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
-            throw new InvalidOperationException($"DatabaseSettings validation failed: {errors}");
-        }
+            var dbSettings = serviceProvider.GetRequiredService<IOptions<DatabaseSettings>>().Value;
 
-        // Register DbContext
-        services.AddDbContext<AppDbContext>(options =>
-        {
             options.UseSqlServer(
                 dbSettings.ConnectionString,
                 sqlOptions =>
@@ -44,12 +42,11 @@ public static class DependencyInjection
                     sqlOptions.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName);
                     sqlOptions.EnableRetryOnFailure(
                         maxRetryCount: dbSettings.MaxRetryCount,
-                        maxRetryDelay: System.TimeSpan.FromSeconds(30),
+                        maxRetryDelay: TimeSpan.FromSeconds(30),
                         errorNumbersToAdd: null);
                     sqlOptions.CommandTimeout(dbSettings.CommandTimeout);
                 });
 
-            // Development-only features
             if (environment.IsDevelopment())
             {
                 if (dbSettings.EnableSensitiveDataLogging)

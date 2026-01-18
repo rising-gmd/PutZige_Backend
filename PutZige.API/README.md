@@ -10,13 +10,13 @@ Expose application use-cases over HTTP; handle request/response, DI and middlewa
 ### Folder structure
 ```
 PutZige.API/
-??? Controllers/
-??? Middleware/
-??? Properties/
-??? appsettings.json
-??? Program.cs
-??? PutZige.API.http
-??? README.md
+?? Controllers/
+?? Middleware/
+?? Properties/
+?? appsettings.json
+?? Program.cs
+?? PutZige.API.http
+?? README.md
 ```
 
 ### Key files
@@ -28,12 +28,13 @@ PutZige.API/
 ## Dependency Injection
 - `Program.cs` calls:
   - `services.AddApplicationServices()` (registers `PutZige.Application`)
-  - `services.AddInfrastructureServices(configuration)` (registers `PutZige.Infrastructure` including `AppDbContext`)
+  - `services.AddInfrastructureServices(configuration, environment)` (registers `PutZige.Infrastructure` including `AppDbContext`)
 - Controllers receive service interfaces via constructor injection
 
 ## Running the API
 - From solution root: `dotnet run --project PutZige.API`
 - Ensure DB migrations applied before starting in non-development environments
+- The infrastructure layer now validates `DatabaseSettings` at startup; ensure `Database:ConnectionString` is configured
 
 ## Swagger / API docs
 - Swagger is enabled in Development environment via `Program.cs`
@@ -42,3 +43,7 @@ PutZige.API/
 ## Environment-specific configs
 - `appsettings.Development.json` and `appsettings.Production.json` supported
 - Use environment variables to override connection strings and secrets
+
+## Recommendations
+- Use `IUnitOfWork` in services to group multiple repository calls and commit once.
+- Use tracked entities (fetched without `AsNoTracking`) when performing multiple updates in a single unit of work.
