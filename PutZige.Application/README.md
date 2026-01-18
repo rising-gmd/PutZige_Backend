@@ -36,11 +36,22 @@ PutZige.Application/
 - Registers service implementations (`Services/*`) as scoped/transient as appropriate
 - Registers validators with the service collection for controller integration
 
-## Usage
-- Controllers call into service interfaces (registered by the API)
-- DTOs are mapped to domain entities inside services or via mappers in `Dependencies/`
-
 ## Design patterns
 - Use-case oriented services
 - Interface-driven design (service abstractions)
 - Validation via FluentValidation
+
+## Validation Pattern
+We use explicit/manual validation in controllers instead of FluentValidation auto-validation. This improves testability and control over error responses.
+
+Pattern:
+1. Inject `IValidator<TRequest>` into the controller constructor.
+2. In the controller action, call `await _validator.ValidateAsync(request, ct)`.
+3. If `IsValid` is false convert the `ValidationResult` into a dictionary and return `BadRequest` with structured errors.
+
+A helper `ValidationExtensions.ToDictionary()` is available in `PutZige.Application.Extensions` to convert `ValidationResult` into a `Dictionary<string, string[]>`.
+
+Benefits:
+- Explicit and testable
+- Full control over error responses
+- Avoids deprecated auto-validation APIs

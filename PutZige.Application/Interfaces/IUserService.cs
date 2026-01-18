@@ -30,5 +30,7 @@ namespace PutZige.Application.Interfaces
         /// Soft deletes a user by id.
         /// </summary>
         Task SoftDeleteUserAsync(Guid userId, CancellationToken ct = default);
+
+        // Future: Task<(User User, string Token)> LoginAsync(string email, string password, CancellationToken ct = default);
     }
 }

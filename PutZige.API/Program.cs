@@ -1,6 +1,7 @@
 using Microsoft.OpenApi;
 using PutZige.Application;
 using PutZige.Infrastructure;
+using PutZige.API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,14 +20,17 @@ builder.Services.AddInfrastructureServices(builder.Configuration, builder.Enviro
 var app = builder.Build();
 
 // Configure pipeline
+app.UseMiddleware<GlobalExceptionHandlerMiddleware>(); // FIRST
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+app.UseRouting();
 app.UseHttpsRedirection();
-app.UseAuthorization();
+app.UseAuthentication(); 
+app.UseAuthorization(); 
 app.MapControllers();
-
 app.Run();

@@ -1,5 +1,6 @@
 // File: src/PutZige.Application/DependencyInjection.cs
 
+#nullable enable
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
@@ -16,7 +17,6 @@ public static class DependencyInjection
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
         // Register application services
-        services.AddScoped<UserService>();
         services.AddScoped<IUserService, UserService>();
 
         return services;
