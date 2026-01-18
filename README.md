@@ -1,69 +1,173 @@
 # PutZige
 
-PutZige is a messaging application implemented with Clean Architecture. The solution focuses on user management, sessions, preferences, rate limiting, and extensible user metadata.
+PutZige is an identity and user-management backend for web and mobile clients. It provides APIs for user registration, authentication, profile management, sessions, rate-limiting state, and extensible user metadata. The repository follows Clean Architecture and Domain-Driven Design (DDD) principles.
 
-## Purpose
-HTTP entry point and solution-level overview for developers onboarding to the codebase.
+## Table of contents
+
+- [Architecture](#architecture)
+- [Technology stack](#technology-stack)
+- [Project structure](#project-structure)
+- [Quick start](#quick-start)
+- [Development setup](#development-setup)
+- [Build and run](#build-and-run)
+- [API documentation](#api-documentation)
+- [Configuration](#configuration)
+- [Contributing](#contributing)
+- [License](#license)
+- [Related READMEs](#related-readmes)
 
 ## Architecture
-- Four layers: `PutZige.Domain`, `PutZige.Application`, `PutZige.Infrastructure`, `PutZige.API` (presentation)
-- Clean separation: Domain (pure models), Application (use-cases), Infrastructure (data/IO), API (HTTP)
 
-## Tech stack
-- .NET 10
-- Entity Framework Core (SQL Server provider)
-- FluentValidation
-- `BCrypt.Net-Next` for password hashing
+Clean Architecture with DDD principles:
 
-## Quick start
-1. Restore dependencies:
+- **Domain Layer**: Entities, Value Objects, Domain Events
+- **Application Layer**: Use Cases, DTOs, Interfaces
+- **Infrastructure Layer**: Data Access, External Services implementations
+- **API Layer**: REST API, Controllers, Middleware
 
-   `dotnet restore`
+The repository keeps business rules (domain) independent from IO and presentation concerns.
 
-2. Build solution:
+## Technology stack
 
-   `dotnet build`
+- .NET 10 (projects target .NET 10)
+- ASP.NET Core Web API
+- Entity Framework Core (EF Core)
+- AutoMapper (mapping profiles)
+- MediatR (request/mediator pattern)
+- FluentValidation (validators)
+- Serilog (structured logging)
+- Swashbuckle / Swagger (API docs)
+- BCrypt.Net-Next (password hashing)
 
-3. Run migrations (from solution root):
-
-   `dotnet ef database update --project PutZige.Infrastructure --startup-project PutZige.API`
-
-4. Run API:
-
-   `dotnet run --project PutZige.API`
+Note: exact package versions are declared in each project; see project README files below. If a version is not present in a project, it's marked `[TODO]`.
 
 ## Project structure
+
 ```
 PutZige/
-??? PutZige.Application/
-??? PutZige.Domain/
-??? PutZige.Infrastructure/
-??? PutZige.API/
+??? PutZige.Domain/             # Domain entities, value objects
+??? PutZige.Application/        # Application services, use cases, DTOs
+??? PutZige.Infrastructure/     # EF Core DbContext, repositories, services
+??? PutZige.API/                # ASP.NET Core Web API project
+??? *.Tests/                    # Unit and integration tests
+??? README.md                   # This file
 ```
 
-## Current features
-- User aggregate with `UserSettings`, `UserSession`, `UserRateLimit`, `UserMetadata`
-- Repository pattern with generic `IRepository<T>` and `IUserRepository`
-- FluentValidation-based validators in the application layer
-- Options pattern for configuration objects
-- EF Core DbContext with entity configurations, automatic audit timestamps, and soft-delete pattern
+Physical project files (examples):
 
-## Database schema (overview)
-- `Users` — authentication, profile, security
-- `UserSettings` — preferences (1:1 with `User`)
-- `UserSession` — session/presence tracking (1:1 with `User`)
-- `UserRateLimit` — rate limiting state (1:1 with `User`)
-- `UserMetadata` — JSON metadata (1:1 with `User`)
+- `PutZige.Domain/PutZige.Domain.csproj`
+- `PutZige.Application/PutZige.Application.csproj`
+- `PutZige.Infrastructure/PutZige.Infrastructure.csproj`
+- `PutZige.API/PutZige.API.csproj`
 
-## How to run migrations
-- Add migration:
-  `dotnet ef migrations add <Name> --project PutZige.Infrastructure --startup-project PutZige.API`
-- Apply migrations:
-  `dotnet ef database update --project PutZige.Infrastructure --startup-project PutZige.API`
+## Quick start
 
-## Environment setup
-- Configure `ConnectionStrings:Default` in `PutZige.API/appsettings.json` or set environment variable `ConnectionStrings__Default`.
-- Use a local SQL Server instance or container. Apply migrations before running the API in production.
+### Prerequisites
 
-## Contacts
-- Source: https://github.com/rising-gmd/PutZige (origin)
+- .NET 10 SDK installed and on PATH
+- SQL Server or PostgreSQL instance available
+- (Optional) `dotnet-ef` tool for migrations
+
+### Setup
+
+1. Clone repository
+
+```bash
+git clone https://github.com/rising-gmd/PutZige.git
+cd PutZige
+```
+
+2. Set the database connection string in `PutZige.API/appsettings.json` or via environment variable `ConnectionStrings__Default`.
+
+Example `PutZige.API/appsettings.json` snippet:
+
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=localhost;Database=PutZige;User Id=sa;Password=Your_password123;"
+  }
+}
+```
+
+3. Apply EF Core migrations (project paths are exact):
+
+```bash
+# install ef tools if needed
+dotnet tool install --global dotnet-ef
+# apply migrations
+dotnet ef database update --project PutZige.Infrastructure/PutZige.Infrastructure.csproj --startup-project PutZige.API/PutZige.API.csproj
+```
+
+4. Run the API
+
+```bash
+dotnet run --project PutZige.API/PutZige.API.csproj --environment Development
+```
+
+## Development setup
+
+- Recommended IDE: Visual Studio 2022/2023 or Visual Studio Code
+- Restore packages: `dotnet restore`
+- Build solution: `dotnet build`
+- Run all tests: `dotnet test`
+
+Environment variables supported (examples):
+
+- `ConnectionStrings__Default` — database connection string
+- `JwtSettings__Secret` — JWT signing secret
+- `ASPNETCORE_ENVIRONMENT` — environment name
+
+## Build and run
+
+Build all projects:
+
+```bash
+dotnet build
+```
+
+Run the API locally:
+
+```bash
+dotnet run --project PutZige.API/PutZige.API.csproj
+```
+
+Run tests:
+
+```bash
+dotnet test
+```
+
+## API documentation
+
+When running the API in Development, Swagger UI is available (typical URL):
+
+```
+https://localhost:5001/swagger
+```
+
+## Configuration
+
+Primary configuration files (exact paths):
+
+- `PutZige.API/appsettings.json`
+- `PutZige.API/appsettings.Development.json`
+
+For layer-specific configuration see the README files in each project directory below.
+
+## Contributing
+
+- Fork the repository and create feature branches: `git checkout -b feature/your-feature`
+- Keep changes small and focused
+- Run `dotnet test` and ensure build passes
+- Open a pull request targeting `feature/*` branches per repository policy
+
+## License
+
+[TODO] No `LICENSE` file present in the repository root. Add a license file and update this section.
+
+## Related READMEs
+
+- `PutZige.Domain` - `PutZige.Domain/README.md`
+- `PutZige.Application` - `PutZige.Application/README.md`
+- `PutZige.Infrastructure` - `PutZige.Infrastructure/README.md`
+- `PutZige.API` - `PutZige.API/README.md`
