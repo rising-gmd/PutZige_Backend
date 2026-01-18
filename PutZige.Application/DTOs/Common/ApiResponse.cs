@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Http;
 using PutZige.Application.Common.Messages;
 
 namespace PutZige.Application.DTOs.Common
@@ -52,14 +53,14 @@ namespace PutZige.Application.DTOs.Common
                 IsSuccess = true,
                 Data = data,
                 Message = string.IsNullOrWhiteSpace(message) ? SuccessMessages.General.OperationSuccessful : message,
-                StatusCode = 200,
+                StatusCode = StatusCodes.Status200OK,
                 Timestamp = DateTime.UtcNow
             };
 
         /// <summary>
         /// Creates an error ApiResponse with optional errors dictionary and status code.
         /// </summary>
-        public static ApiResponse<T> Error(string message, Dictionary<string, string[]>? errors = null, int statusCode = 400)
+        public static ApiResponse<T> Error(string message, Dictionary<string, string[]>? errors = null, int statusCode = StatusCodes.Status400BadRequest)
             => new()
             {
                 IsSuccess = false,

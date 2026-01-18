@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using PutZige.Application.DTOs.Common;
@@ -21,7 +22,7 @@ namespace PutZige.API.Filters
                     );
 
                 context.Result = new BadRequestObjectResult(
-                    ApiResponse<object>.Error(ErrorMessages.Validation.ValidationFailed, errors, 400));
+                    ApiResponse<object>.Error(ErrorMessages.Validation.ValidationFailed, errors, StatusCodes.Status400BadRequest));
                 return;
             }
 

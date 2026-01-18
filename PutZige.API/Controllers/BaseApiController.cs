@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PutZige.Application.DTOs.Common;
 using System.Collections.Generic;
@@ -11,21 +12,21 @@ namespace PutZige.API.Controllers
             => Ok(ApiResponse<T>.Success(data, message));
 
         protected ActionResult<ApiResponse<T>> Created<T>(T data, string message = "")
-            => StatusCode(201, ApiResponse<T>.Success(data, message));
+            => StatusCode(StatusCodes.Status201Created, ApiResponse<T>.Success(data, message));
 
         protected ActionResult<ApiResponse<T>> BadRequestError<T>(string message, Dictionary<string, string[]>? errors = null)
-            => BadRequest(ApiResponse<T>.Error(message, errors, 400));
+            => BadRequest(ApiResponse<T>.Error(message, errors, StatusCodes.Status400BadRequest));
 
         protected ActionResult<ApiResponse<T>> NotFoundError<T>(string message)
-            => NotFound(ApiResponse<T>.Error(message, null, 404));
+            => NotFound(ApiResponse<T>.Error(message, null, StatusCodes.Status404NotFound));
 
         protected ActionResult<ApiResponse<T>> UnauthorizedError<T>(string message)
-            => Unauthorized(ApiResponse<T>.Error(message, null, 401));
+            => Unauthorized(ApiResponse<T>.Error(message, null, StatusCodes.Status401Unauthorized));
 
         protected ActionResult<ApiResponse<T>> ForbiddenError<T>(string message)
-            => StatusCode(403, ApiResponse<T>.Error(message, null, 403));
+            => StatusCode(StatusCodes.Status403Forbidden, ApiResponse<T>.Error(message, null, StatusCodes.Status403Forbidden));
 
         protected ActionResult<ApiResponse<T>> ServerError<T>(string message)
-            => StatusCode(500, ApiResponse<T>.Error(message, null, 500));
+            => StatusCode(StatusCodes.Status500InternalServerError, ApiResponse<T>.Error(message, null, StatusCodes.Status500InternalServerError));
     }
 }

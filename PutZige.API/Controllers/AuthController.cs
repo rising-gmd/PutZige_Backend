@@ -29,11 +29,7 @@ namespace PutZige.API.Controllers
         [HttpPost("register")]
         public async Task<ActionResult<ApiResponse<RegisterUserResponse>>> Register([FromBody] RegisterUserRequest request, CancellationToken ct)
         {
-            _logger.LogInformation("User registration attempt - Email: {Email}", request.Email);
-
             var response = await _userService.RegisterUserAsync(request.Email, request.Username, request.DisplayName, request.Password, ct);
-
-            _logger.LogInformation("User registered successfully - UserId: {UserId}", response.UserId);
 
             return Created(response, SuccessMessages.Authentication.RegistrationSuccessful);
         }

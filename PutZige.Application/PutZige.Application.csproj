@@ -12,6 +12,7 @@
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" />
     <PackageReference Include="BCrypt.Net-Next" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
     <PackageReference Include="Microsoft.Extensions.Options" />
   </ItemGroup>
