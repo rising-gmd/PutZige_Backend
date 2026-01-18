@@ -47,9 +47,6 @@ try
     builder.Services.AddApplicationServices();
     builder.Services.AddInfrastructureServices(builder.Configuration, builder.Environment);
 
-    // Add AutoMapper
-    builder.Services.AddAutoMapper(typeof(Program));
-
     var app = builder.Build();
 
     // Configure middleware pipeline
