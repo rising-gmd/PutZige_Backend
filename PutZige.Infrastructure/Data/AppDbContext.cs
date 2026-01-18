@@ -16,6 +16,10 @@ namespace PutZige.Infrastructure.Data
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         public DbSet<User> Users => Set<User>();
+        public DbSet<UserSettings> UserSettings => Set<UserSettings>();
+        public DbSet<UserSession> UserSessions => Set<UserSession>();
+        public DbSet<UserRateLimit> UserRateLimits => Set<UserRateLimit>();
+        public DbSet<UserMetadata> UserMetadata => Set<UserMetadata>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

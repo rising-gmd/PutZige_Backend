@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace PutZige.Domain.Entities
 {
@@ -41,22 +41,12 @@ namespace PutZige.Domain.Entities
         // Session & Security
         public DateTime? LastLoginAt { get; set; }
         public string? LastLoginIp { get; set; }
-        public DateTime? LastActiveAt { get; set; }
 
-        // Privacy
-        public bool IsOnline { get; set; } = false;
-        public bool ShowOnlineStatus { get; set; } = true;
-        public bool AllowFriendRequests { get; set; } = true;
-
-        // Rate Limiting
-        public int MessagesSentToday { get; set; } = 0;
-        public DateTime? LastMessageSentAt { get; set; }
-        public int ApiCallsToday { get; set; } = 0;
-        public DateTime? RateLimitResetAt { get; set; }
-
-        // Metadata
-        public string? DeviceTokens { get; set; }
-        public string? Preferences { get; set; }
-        public string? Metadata { get; set; }
+        // Navigation properties to normalized tables
+        public UserSettings? Settings { get; set; }
+        public UserSession? Session { get; set; }
+        public UserRateLimit? RateLimit { get; set; }
+        public UserMetadata? Metadata { get; set; }
     }
 }
+

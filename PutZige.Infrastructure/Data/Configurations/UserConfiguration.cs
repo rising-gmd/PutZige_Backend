@@ -42,19 +42,15 @@ namespace PutZige.Infrastructure.Data.Configurations
             builder.Property(u => u.IsLocked).HasDefaultValue(false);
             builder.Property(u => u.FailedLoginAttempts).HasDefaultValue(0);
 
-            // Privacy
-            builder.Property(u => u.IsOnline).HasDefaultValue(false);
-            builder.Property(u => u.ShowOnlineStatus).HasDefaultValue(true);
-            builder.Property(u => u.AllowFriendRequests).HasDefaultValue(true);
+            // Session & Security
+            builder.Property(u => u.LastLoginAt);
+            builder.Property(u => u.LastLoginIp).HasMaxLength(50);
 
-            // Rate Limiting
-            builder.Property(u => u.MessagesSentToday).HasDefaultValue(0);
-            builder.Property(u => u.ApiCallsToday).HasDefaultValue(0);
-
-            // Metadata
-            builder.Property(u => u.DeviceTokens).HasMaxLength(1024);
-            builder.Property(u => u.Preferences).HasMaxLength(2048);
-            builder.Property(u => u.Metadata).HasMaxLength(2048);
+            // Navigation configuration for normalized related entities
+            builder.HasOne(u => u.Settings).WithOne(s => s.User).HasForeignKey<UserSettings>(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
+            builder.HasOne(u => u.Session).WithOne(s => s.User).HasForeignKey<UserSession>(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
+            builder.HasOne(u => u.RateLimit).WithOne(r => r.User).HasForeignKey<UserRateLimit>(r => r.UserId).OnDelete(DeleteBehavior.Cascade);
+            builder.HasOne(u => u.Metadata).WithOne(m => m.User).HasForeignKey<UserMetadata>(m => m.UserId).OnDelete(DeleteBehavior.Cascade);
         }
     }
 }
