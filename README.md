@@ -1,6 +1,6 @@
 # PutZige
 
-PutZige is an identity and user-management backend for web and mobile clients. It provides APIs for user registration, authentication, profile management, sessions, rate-limiting state, and extensible user metadata. The repository follows Clean Architecture and Domain-Driven Design (DDD) principles.
+PutZige is a Whatsapp 
 
 ## Table of contents
 
@@ -113,9 +113,9 @@ dotnet run --project PutZige.API/PutZige.API.csproj --environment Development
 
 Environment variables supported (examples):
 
-- `ConnectionStrings__Default` — database connection string
-- `JwtSettings__Secret` — JWT signing secret
-- `ASPNETCORE_ENVIRONMENT` — environment name
+- `ConnectionStrings__Default` â€” database connection string
+- `JwtSettings__Secret` â€” JWT signing secret
+- `ASPNETCORE_ENVIRONMENT` â€” environment name
 
 ## Build and run
 
