@@ -1,7 +1,6 @@
 <Solution>
   <Folder Name="/Solution Items/">
     <File Path="Directory.Packages.props" />
-    <File Path="requirements.md" />
   </Folder>
   <Folder Name="/src/" />
   <Folder Name="/src/Core/">

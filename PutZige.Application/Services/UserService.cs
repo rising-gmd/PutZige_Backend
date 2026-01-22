@@ -40,12 +40,7 @@ namespace PutZige.Application.Services
         /// <summary>
         /// Registers a new user with validation and hashing and returns a response DTO.
         /// </summary>
-        public async Task<RegisterUserResponse> RegisterUserAsync(
-            string email,
-            string username,
-            string displayName,
-            string password,
-            CancellationToken ct = default)
+        public async Task<RegisterUserResponse> RegisterUserAsync(string email, string username, string displayName, string password, CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(email)) throw new ArgumentException(ErrorMessages.Validation.EmailRequired, nameof(email));
             if (string.IsNullOrWhiteSpace(username)) throw new ArgumentException(ErrorMessages.Validation.UsernameRequired, nameof(username));
@@ -83,9 +78,13 @@ namespace PutZige.Application.Services
             };
 
             _logger?.LogInformation("Creating user entity - Email: {Email}", email);
+
             await _userRepository.AddAsync(user, ct);
+
             _logger?.LogInformation("Saving changes to database");
+
             await _unitOfWork.SaveChangesAsync(ct);
+
             _logger?.LogInformation("User entity created - UserId: {UserId}", user.Id);
 
             // TODO: Send verification email to {user.Email} with token {user.EmailVerificationToken}

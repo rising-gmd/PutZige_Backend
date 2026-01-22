@@ -31,6 +31,5 @@ namespace PutZige.Application.Interfaces
         /// </summary>
         Task SoftDeleteUserAsync(Guid userId, CancellationToken ct = default);
 
-        // Future: Task<(RegisterUserResponse User, string Token)> LoginAsync(string email, string password, CancellationToken ct = default);
     }
 }

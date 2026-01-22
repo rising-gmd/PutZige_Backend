@@ -1,4 +1,4 @@
-using Microsoft.OpenApi;
+using FluentValidation.AspNetCore;
 using Microsoft.OpenApi;
 using PutZige.API.Configuration;
 using PutZige.API.Filters;
@@ -35,6 +35,10 @@ try
     {
         options.Filters.Add<ValidationFilter>();
     });
+
+    // Integrate FluentValidation with ASP.NET Core model validation
+    builder.Services.AddFluentValidationAutoValidation();
+    builder.Services.AddFluentValidationClientsideAdapters();
 
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(c =>

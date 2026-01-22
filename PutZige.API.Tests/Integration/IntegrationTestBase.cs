@@ -24,14 +24,26 @@ namespace PutZige.API.Tests.Integration
                 {
                     builder.ConfigureServices(services =>
                     {
-                        // Remove the existing DbContext registration
-                        var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<AppDbContext>));
-                        if (descriptor != null) services.Remove(descriptor);
+                        // Remove any existing DbContext registrations to avoid multiple providers
+                        var descriptors = services.Where(d =>
+                            (d.ServiceType != null && d.ServiceType.IsGenericType && d.ServiceType.GetGenericTypeDefinition() == typeof(DbContextOptions<>)) ||
+                            d.ServiceType == typeof(AppDbContext) ||
+                            (d.ImplementationType != null && d.ImplementationType == typeof(AppDbContext))
+                        ).ToList();
 
-                        // Add in-memory database for testing
+                        foreach (var descriptor in descriptors)
+                            services.Remove(descriptor);
+
+                        // Create a dedicated EF service provider for InMemory to isolate provider services
+                        var efServiceProvider = new ServiceCollection()
+                            .AddEntityFrameworkInMemoryDatabase()
+                            .BuildServiceProvider();
+
+                        // Add in-memory database for testing and set internal service provider
                         services.AddDbContext<AppDbContext>(options =>
                         {
                             options.UseInMemoryDatabase(dbName);
+                            options.UseInternalServiceProvider(efServiceProvider);
                         });
                     });
                 });
