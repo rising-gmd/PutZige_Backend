@@ -13,6 +13,7 @@ using PutZige.Infrastructure.Data;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using PutZige.Domain.Entities;
+using System.Collections.Generic;
 
 namespace PutZige.API.Tests.Controllers
 {
@@ -148,36 +149,44 @@ namespace PutZige.API.Tests.Controllers
         }
 
         [Fact]
-        public async Task Register_MissingRequiredFields_Returns400BadRequest()
+        public async Task Register_MissingRequiredFields_Returns400WithLowercaseFieldNames()
         {
-            // Arrange: missing password
-            var request = new { Email = "a@b.com", Username = "u", DisplayName = "d" };
+            // Arrange
+            var invalidRequest = new { username = "test" }; // Missing email, password
 
             // Act
-            var response = await Client.PostAsJsonAsync("/api/v1/auth/register", request);
+            var response = await Client.PostAsJsonAsync("/api/v1/auth/register", invalidRequest);
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
 
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+            result.Should().NotBeNull();
+            result!.IsSuccess.Should().BeFalse();
+            result.Errors.Should().NotBeNull();
+            result.Errors.Should().ContainKey("email");
+            result.Errors.Should().ContainKey("password");
         }
 
         [Fact]
-        public async Task Register_InvalidEmailFormat_Returns400BadRequest()
+        public async Task Register_InvalidEmailFormat_Returns400WithLowercaseFieldName()
         {
             // Arrange
-            var request = new RegisterUserRequest
+            var invalidRequest = new
             {
-                Email = "not-an-email",
-                Username = "uinvalid",
-                DisplayName = "Invalid Email",
-                Password = "Password123!",
-                ConfirmPassword = "Password123!"
+                email = "notanemail",
+                username = "testuser",
+                displayName = "Test User",
+                password = "ValidPass123!"
             };
 
             // Act
-            var response = await Client.PostAsJsonAsync("/api/v1/auth/register", request);
+            var response = await Client.PostAsJsonAsync("/api/v1/auth/register", invalidRequest);
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
 
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+            result.Should().NotBeNull();
+            result!.Errors.Should().ContainKey("email");
         }
     }
 }

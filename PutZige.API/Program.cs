@@ -34,6 +34,10 @@ try
     builder.Services.AddControllers(options =>
     {
         options.Filters.Add<ValidationFilter>();
+    })
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.SuppressModelStateInvalidFilter = true;
     });
 
     // Integrate FluentValidation with ASP.NET Core model validation

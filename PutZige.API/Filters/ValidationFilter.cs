@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using PutZige.Application.DTOs.Common;
 using PutZige.Application.Common.Messages;
-using System.Linq;
 using System.Threading.Tasks;
+using PutZige.API.Extensions;
 
 namespace PutZige.API.Filters
 {
@@ -14,15 +14,9 @@ namespace PutZige.API.Filters
         {
             if (!context.ModelState.IsValid)
             {
-                var errors = context.ModelState
-                    .Where(x => x.Value?.Errors.Count > 0)
-                    .ToDictionary(
-                        kvp => kvp.Key,
-                        kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray()
-                    );
+                var errors = context.ModelState.ToErrorsDictionary();
 
-                context.Result = new BadRequestObjectResult(
-                    ApiResponse<object>.Error(ErrorMessages.Validation.ValidationFailed, errors, StatusCodes.Status400BadRequest));
+                context.Result = new BadRequestObjectResult(ApiResponse<object>.Error(ErrorMessages.Validation.ValidationFailed, errors, StatusCodes.Status400BadRequest));
                 return;
             }
 
