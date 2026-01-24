@@ -6,6 +6,9 @@ namespace PutZige.API.Tests.Extensions
 {
     public class ModelStateExtensionsTests
     {
+        /// <summary>
+        /// Converts various field names to camelCase expected by API error responses.
+        /// </summary>
         [Theory]
         [InlineData("Email", "email")]
         [InlineData("Password", "password")]

@@ -42,6 +42,9 @@ namespace PutZige.Application.Tests.Services
             _mockHashingService.Setup(h => h.HashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync((string s, CancellationToken ct) => new HashedValue("hash-"+s, "salt-"+s));
         }
 
+        /// <summary>
+        /// Valid credentials produce access and refresh tokens and persist session changes.
+        /// </summary>
         [Fact]
         public async Task LoginAsync_ValidCredentials_ReturnsLoginResponse()
         {
@@ -77,6 +80,9 @@ namespace PutZige.Application.Tests.Services
             _uow.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.AtLeastOnce);
         }
 
+        /// <summary>
+        /// Invalid password increments failed attempts and locks account after fifth attempt.
+        /// </summary>
         [Fact]
         public async Task LoginAsync_InvalidPassword_IncrementsFailedAttempts_AndLocksOnFifth()
         {
@@ -120,6 +126,9 @@ namespace PutZige.Application.Tests.Services
             user.LockedUntil.Should().BeAfter(DateTime.UtcNow);
         }
 
+        /// <summary>
+        /// Locked accounts throw an account locked error when attempting login.
+        /// </summary>
         [Fact]
         public async Task LoginAsync_LockedAccount_ThrowsInvalidOperationException()
         {
@@ -150,6 +159,9 @@ namespace PutZige.Application.Tests.Services
             await act.Should().ThrowAsync<InvalidOperationException>().WithMessage(ErrorMessages.Authentication.AccountLocked + "*");
         }
 
+        /// <summary>
+        /// Non-existent email input returns invalid credentials.
+        /// </summary>
         [Fact]
         public async Task LoginAsync_NonExistentEmail_ThrowsInvalidOperationException()
         {
@@ -166,6 +178,9 @@ namespace PutZige.Application.Tests.Services
             await act.Should().ThrowAsync<InvalidOperationException>().WithMessage(ErrorMessages.Authentication.InvalidCredentials + "*");
         }
 
+        /// <summary>
+        /// Inactive account attempts return account inactive error.
+        /// </summary>
         [Fact]
         public async Task LoginAsync_InactiveAccount_ThrowsInvalidOperationException()
         {
@@ -180,6 +195,9 @@ namespace PutZige.Application.Tests.Services
             await act.Should().ThrowAsync<InvalidOperationException>().WithMessage(ErrorMessages.Authentication.AccountInactive + "*");
         }
 
+        /// <summary>
+        /// Unverified email attempts return email not verified error.
+        /// </summary>
         [Fact]
         public async Task LoginAsync_UnverifiedEmail_ThrowsInvalidOperationException()
         {
@@ -194,6 +212,9 @@ namespace PutZige.Application.Tests.Services
             await act.Should().ThrowAsync<InvalidOperationException>().WithMessage(ErrorMessages.Authentication.EmailNotVerified + "*");
         }
 
+        /// <summary>
+        /// Valid refresh token returns new access and refresh tokens and updates session hash.
+        /// </summary>
         [Fact]
         public async Task RefreshTokenAsync_ValidToken_ReturnsNewAccessToken()
         {
@@ -233,6 +254,9 @@ namespace PutZige.Application.Tests.Services
             _uow.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         }
 
+        /// <summary>
+        /// Expired refresh token throws an invalid refresh token error.
+        /// </summary>
         [Fact]
         public async Task RefreshTokenAsync_ExpiredToken_ThrowsInvalidOperationException()
         {
@@ -259,6 +283,9 @@ namespace PutZige.Application.Tests.Services
             await act.Should().ThrowAsync<InvalidOperationException>().WithMessage(ErrorMessages.Authentication.InvalidRefreshToken + "*");
         }
 
+        /// <summary>
+        /// Invalid refresh token input throws invalid refresh token error.
+        /// </summary>
         [Fact]
         public async Task RefreshTokenAsync_InvalidToken_ThrowsInvalidOperationException()
         {
@@ -271,8 +298,9 @@ namespace PutZige.Application.Tests.Services
             await act.Should().ThrowAsync<InvalidOperationException>().WithMessage(ErrorMessages.Authentication.InvalidRefreshToken + "*");
         }
 
-        // New tests added below
-
+        /// <summary>
+        /// Expired lockout automatically unlocks and allows next successful login.
+        /// </summary>
         [Fact]
         public async Task LoginAsync_ExpiredLockout_AutoUnlocksAndAllowsLogin()
         {
@@ -308,6 +336,9 @@ namespace PutZige.Application.Tests.Services
             user.FailedLoginAttempts.Should().Be(0);
         }
 
+        /// <summary>
+        /// Successful login after previous failed attempts resets the counter and clears last failed time.
+        /// </summary>
         [Fact]
         public async Task LoginAsync_SuccessfulLoginAfterFailedAttempts_ResetsFailedAttemptsCounter()
         {
@@ -341,6 +372,9 @@ namespace PutZige.Application.Tests.Services
             user.LastFailedLoginAttempt.Should().BeNull();
         }
 
+        /// <summary>
+        /// Locked accounts with null LockedUntil remain locked and throw.
+        /// </summary>
         [Fact]
         public async Task LoginAsync_LockedAccountWithNullLockedUntil_StillThrowsLocked()
         {
@@ -371,6 +405,9 @@ namespace PutZige.Application.Tests.Services
             await act.Should().ThrowAsync<InvalidOperationException>().WithMessage(ErrorMessages.Authentication.AccountLocked + "*");
         }
 
+        /// <summary>
+        /// Successful login updates last login timestamp and IP address.
+        /// </summary>
         [Fact]
         public async Task LoginAsync_UpdatesLastLoginAtAndLastLoginIp_OnSuccess()
         {
@@ -401,6 +438,9 @@ namespace PutZige.Application.Tests.Services
             user.LastLoginIp.Should().Be("127.0.0.1");
         }
 
+        /// <summary>
+        /// Creates a new session if the user's session is null during login.
+        /// </summary>
         [Fact]
         public async Task LoginAsync_CreatesNewSession_WhenSessionIsNull()
         {
@@ -434,6 +474,9 @@ namespace PutZige.Application.Tests.Services
             user.Session.IsOnline.Should().BeTrue();
         }
 
+        /// <summary>
+        /// Updates existing session instance instead of replacing it when logging in.
+        /// </summary>
         [Fact]
         public async Task LoginAsync_UpdatesExistingSession_WhenSessionExists()
         {
@@ -476,6 +519,9 @@ namespace PutZige.Application.Tests.Services
             user.Session.RefreshTokenSalt.Should().NotBe("old-salt");
         }
 
+        /// <summary>
+        /// Throws when refresh token hash verification fails during refresh.
+        /// </summary>
         [Fact]
         public async Task RefreshTokenAsync_InvalidHashVerification_ThrowsInvalidRefreshToken()
         {
@@ -505,6 +551,9 @@ namespace PutZige.Application.Tests.Services
             await act.Should().ThrowAsync<InvalidOperationException>().WithMessage(ErrorMessages.Authentication.InvalidRefreshToken + "*");
         }
 
+        /// <summary>
+        /// Throws when the user returned for a refresh token has no session.
+        /// </summary>
         [Fact]
         public async Task RefreshTokenAsync_NullSession_ThrowsInvalidRefreshToken()
         {
@@ -528,6 +577,9 @@ namespace PutZige.Application.Tests.Services
             await act.Should().ThrowAsync<InvalidOperationException>().WithMessage(ErrorMessages.Authentication.InvalidRefreshToken + "*");
         }
 
+        /// <summary>
+        /// Updates session last active timestamp on successful refresh.
+        /// </summary>
         [Fact]
         public async Task RefreshTokenAsync_UpdatesLastActiveAt_OnSuccess()
         {

@@ -12,6 +12,9 @@ namespace PutZige.Application.Tests.Validators
     {
         private readonly HashingSettingsValidator _validator = new();
 
+        /// <summary>
+        /// Valid hashing settings pass validation.
+        /// </summary>
         [Fact]
         public void Validate_ValidSettings_PassesValidation()
         {
@@ -20,6 +23,9 @@ namespace PutZige.Application.Tests.Validators
             result.IsValid.Should().BeTrue();
         }
 
+        /// <summary>
+        /// Salt size below minimum fails validation.
+        /// </summary>
         [Fact]
         public void Validate_SaltSizeTooSmall_FailsValidation()
         {
@@ -28,6 +34,9 @@ namespace PutZige.Application.Tests.Validators
             result.IsValid.Should().BeFalse();
         }
 
+        /// <summary>
+        /// Salt size above maximum fails validation.
+        /// </summary>
         [Fact]
         public void Validate_SaltSizeTooLarge_FailsValidation()
         {
@@ -36,6 +45,9 @@ namespace PutZige.Application.Tests.Validators
             result.IsValid.Should().BeFalse();
         }
 
+        /// <summary>
+        /// Unsupported algorithm fails validation.
+        /// </summary>
         [Fact]
         public void Validate_InvalidAlgorithm_FailsValidation()
         {
@@ -44,6 +56,9 @@ namespace PutZige.Application.Tests.Validators
             result.IsValid.Should().BeFalse();
         }
 
+        /// <summary>
+        /// Iteration count below minimum fails validation.
+        /// </summary>
         [Fact]
         public void Validate_IterationsTooLow_FailsValidation()
         {
@@ -52,6 +67,9 @@ namespace PutZige.Application.Tests.Validators
             result.IsValid.Should().BeFalse();
         }
 
+        /// <summary>
+        /// Iteration count above maximum fails validation.
+        /// </summary>
         [Fact]
         public void Validate_IterationsTooHigh_FailsValidation()
         {
@@ -60,6 +78,9 @@ namespace PutZige.Application.Tests.Validators
             result.IsValid.Should().BeFalse();
         }
 
+        /// <summary>
+        /// Empty algorithm string fails validation.
+        /// </summary>
         [Fact]
         public void Validate_EmptyAlgorithm_FailsValidation()
         {

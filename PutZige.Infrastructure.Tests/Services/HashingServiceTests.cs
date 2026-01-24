@@ -23,6 +23,9 @@ namespace PutZige.Infrastructure.Tests.Services
             _svc = new HashingService(Options.Create(settings));
         }
 
+        /// <summary>
+        /// HashAsync returns a non-empty hash and salt for valid input.
+        /// </summary>
         [Fact]
         public async Task HashAsync_WithValidInput_ReturnsHashAndSalt()
         {
@@ -32,6 +35,9 @@ namespace PutZige.Infrastructure.Tests.Services
             result.Salt.Should().NotBeNullOrWhiteSpace();
         }
 
+        /// <summary>
+        /// Hashing the same input twice yields different salts and hashes.
+        /// </summary>
         [Fact]
         public async Task HashAsync_WithSameInputTwice_GeneratesDifferentHashes()
         {
@@ -41,6 +47,9 @@ namespace PutZige.Infrastructure.Tests.Services
             a.Salt.Should().NotBe(b.Salt);
         }
 
+        /// <summary>
+        /// VerifyAsync returns true for correct password.
+        /// </summary>
         [Fact]
         public async Task VerifyAsync_WithCorrectPassword_ReturnsTrue()
         {
@@ -50,6 +59,9 @@ namespace PutZige.Infrastructure.Tests.Services
             ok.Should().BeTrue();
         }
 
+        /// <summary>
+        /// VerifyAsync returns false for incorrect password.
+        /// </summary>
         [Fact]
         public async Task VerifyAsync_WithIncorrectPassword_ReturnsFalse()
         {
@@ -58,18 +70,27 @@ namespace PutZige.Infrastructure.Tests.Services
             ok.Should().BeFalse();
         }
 
+        /// <summary>
+        /// VerifyAsync throws for null plaintext input.
+        /// </summary>
         [Fact]
         public async Task VerifyAsync_WithNullPlainText_ThrowsArgumentException()
         {
             await _svc.Invoking(s => s.VerifyAsync(null!, "h", "s", CancellationToken.None)).Should().ThrowAsync<ArgumentException>();
         }
 
+        /// <summary>
+        /// VerifyAsync throws for empty plaintext input.
+        /// </summary>
         [Fact]
         public async Task VerifyAsync_WithEmptyPlainText_ThrowsArgumentException()
         {
             await _svc.Invoking(s => s.VerifyAsync(string.Empty, "h", "s", CancellationToken.None)).Should().ThrowAsync<ArgumentException>();
         }
 
+        /// <summary>
+        /// HashAsync completes within reasonable performance bounds.
+        /// </summary>
         [Fact]
         public async Task HashAsync_Performance_CompletesWithin100Milliseconds()
         {
@@ -79,6 +100,9 @@ namespace PutZige.Infrastructure.Tests.Services
             sw.ElapsedMilliseconds.Should().BeLessThan(100);
         }
 
+        /// <summary>
+        /// Generated secure tokens use URL-safe base64 characters.
+        /// </summary>
         [Fact]
         public void GenerateSecureToken_ReturnsUrlSafeBase64String()
         {
@@ -88,6 +112,9 @@ namespace PutZige.Infrastructure.Tests.Services
             Regex.IsMatch(t, "^[A-Za-z0-9_-]+$").Should().BeTrue();
         }
 
+        /// <summary>
+        /// GenerateSecureToken generates different values on subsequent calls.
+        /// </summary>
         [Fact]
         public void GenerateSecureToken_CalledTwice_GeneratesDifferentTokens()
         {
@@ -96,6 +123,9 @@ namespace PutZige.Infrastructure.Tests.Services
             a.Should().NotBe(b);
         }
 
+        /// <summary>
+        /// VerifyAsync compares values in constant time to mitigate timing attacks.
+        /// </summary>
         [Fact]
         public async Task VerifyAsync_UsesConstantTimeComparison_PreventTimingAttacks()
         {
@@ -114,18 +144,27 @@ namespace PutZige.Infrastructure.Tests.Services
             diff.Should().BeLessThan(50);
         }
 
+        /// <summary>
+        /// HashAsync throws when input is null.
+        /// </summary>
         [Fact]
         public async Task HashAsync_WithNullInput_ThrowsArgumentException()
         {
             await _svc.Invoking(s => s.HashAsync(null!, CancellationToken.None)).Should().ThrowAsync<ArgumentException>();
         }
 
+        /// <summary>
+        /// VerifyAsync throws when hash is null.
+        /// </summary>
         [Fact]
         public async Task VerifyAsync_WithNullHash_ThrowsArgumentException()
         {
             await _svc.Invoking(s => s.VerifyAsync("p", null!, "s", CancellationToken.None)).Should().ThrowAsync<ArgumentException>();
         }
 
+        /// <summary>
+        /// VerifyAsync throws when salt is null.
+        /// </summary>
         [Fact]
         public async Task VerifyAsync_WithNullSalt_ThrowsArgumentException()
         {
@@ -133,6 +172,9 @@ namespace PutZige.Infrastructure.Tests.Services
             await _svc.Invoking(s => s.VerifyAsync("p", hashed.Hash, null!, CancellationToken.None)).Should().ThrowAsync<ArgumentException>();
         }
 
+        /// <summary>
+        /// GenerateSecureToken returns tokens for different lengths.
+        /// </summary>
         [Theory]
         [InlineData(16)]
         [InlineData(32)]

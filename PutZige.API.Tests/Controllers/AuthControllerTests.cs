@@ -40,6 +40,9 @@ namespace PutZige.API.Tests.Controllers
             return CryptographicOperations.FixedTimeEquals(a, b);
         }
 
+        /// <summary>
+        /// Registers a user via API and returns HTTP 201 Created.
+        /// </summary>
         [Fact]
         public async Task Register_ValidRequest_Returns201Created()
         {
@@ -60,6 +63,9 @@ namespace PutZige.API.Tests.Controllers
             response.StatusCode.Should().Be(HttpStatusCode.Created);
         }
 
+        /// <summary>
+        /// Successful registration returns a user DTO in response.
+        /// </summary>
         [Fact]
         public async Task Register_ValidRequest_ReturnsUserResponseDto()
         {
@@ -85,6 +91,9 @@ namespace PutZige.API.Tests.Controllers
             payload.Data.Username.Should().Be(request.Username);
         }
 
+        /// <summary>
+        /// Registers a user and verifies the user exists in the database.
+        /// </summary>
         [Fact]
         public async Task Register_ValidRequest_SavesUserToDatabase()
         {
@@ -111,6 +120,9 @@ namespace PutZige.API.Tests.Controllers
             user!.Email.Should().Be(email);
         }
 
+        /// <summary>
+        /// Registration endpoint stores hashed password and salt in DB.
+        /// </summary>
         [Fact]
         public async Task Register_ValidRequest_HashesPassword()
         {
@@ -140,6 +152,9 @@ namespace PutZige.API.Tests.Controllers
             VerifyHash(plain, user.PasswordHash, user.PasswordSalt).Should().BeTrue();
         }
 
+        /// <summary>
+        /// Duplicate email registration returns BadRequest.
+        /// </summary>
         [Fact]
         public async Task Register_DuplicateEmail_Returns400BadRequest()
         {
@@ -171,6 +186,9 @@ namespace PutZige.API.Tests.Controllers
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
 
+        /// <summary>
+        /// Missing required fields return BadRequest with lowercase field names in errors.
+        /// </summary>
         [Fact]
         public async Task Register_MissingRequiredFields_Returns400WithLowercaseFieldNames()
         {
@@ -190,6 +208,9 @@ namespace PutZige.API.Tests.Controllers
             result.Errors.Should().ContainKey("password");
         }
 
+        /// <summary>
+        /// Invalid email format returns BadRequest referencing the email field.
+        /// </summary>
         [Fact]
         public async Task Register_InvalidEmailFormat_Returns400WithLowercaseFieldName()
         {
@@ -212,6 +233,9 @@ namespace PutZige.API.Tests.Controllers
             result!.Errors.Should().ContainKey("email");
         }
 
+        /// <summary>
+        /// Successful login returns tokens and HTTP 200.
+        /// </summary>
         [Fact]
         public async Task Login_ValidCredentials_Returns200OK()
         {
@@ -239,6 +263,9 @@ namespace PutZige.API.Tests.Controllers
             payload.Data.RefreshToken.Should().NotBeNullOrWhiteSpace();
         }
 
+        /// <summary>
+        /// Invalid login password returns BadRequest.
+        /// </summary>
         [Fact]
         public async Task Login_InvalidPassword_Returns400BadRequest()
         {
@@ -256,6 +283,9 @@ namespace PutZige.API.Tests.Controllers
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
 
+        /// <summary>
+        /// Five failed login attempts from API lock the user in DB.
+        /// </summary>
         [Fact]
         public async Task Login_FiveFailedAttempts_LocksAccount()
         {
@@ -290,6 +320,9 @@ namespace PutZige.API.Tests.Controllers
             }
         }
 
+        /// <summary>
+        /// Login to a locked account returns BadRequest.
+        /// </summary>
         [Fact]
         public async Task Login_LockedAccount_Returns400BadRequest()
         {
@@ -308,6 +341,9 @@ namespace PutZige.API.Tests.Controllers
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
 
+        /// <summary>
+        /// Non-existent email returns BadRequest.
+        /// </summary>
         [Fact]
         public async Task Login_NonExistentEmail_Returns400BadRequest()
         {
@@ -316,6 +352,9 @@ namespace PutZige.API.Tests.Controllers
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
 
+        /// <summary>
+        /// Missing login fields returns BadRequest and mentions email in errors.
+        /// </summary>
         [Fact]
         public async Task Login_MissingFields_Returns400BadRequest()
         {
@@ -331,6 +370,9 @@ namespace PutZige.API.Tests.Controllers
             (hasEmailKey || hasEmailInMessages).Should().BeTrue("expected validation to mention the missing 'email' field in either key or message");
         }
 
+        /// <summary>
+        /// Valid refresh token returns new tokens and HTTP 200.
+        /// </summary>
         [Fact]
         public async Task RefreshToken_ValidToken_Returns200OK()
         {
@@ -357,6 +399,9 @@ namespace PutZige.API.Tests.Controllers
             payload.Data.RefreshToken.Should().NotBeNullOrWhiteSpace();
         }
 
+        /// <summary>
+        /// Expired refresh token returns BadRequest.
+        /// </summary>
         [Fact]
         public async Task RefreshToken_ExpiredToken_Returns400BadRequest()
         {

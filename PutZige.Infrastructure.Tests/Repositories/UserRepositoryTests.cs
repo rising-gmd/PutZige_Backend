@@ -22,6 +22,9 @@ namespace PutZige.Infrastructure.Tests.Repositories
             _sut = new UserRepository(Context);
         }
 
+        /// <summary>
+        /// Returns true when an email exists in the database.
+        /// </summary>
         [Fact]
         public async Task IsEmailTakenAsync_ExistingEmail_ReturnsTrue()
         {
@@ -38,6 +41,9 @@ namespace PutZige.Infrastructure.Tests.Repositories
             result.Should().BeTrue();
         }
 
+        /// <summary>
+        /// Returns false when email does not exist.
+        /// </summary>
         [Fact]
         public async Task IsEmailTakenAsync_NonExistingEmail_ReturnsFalse()
         {
@@ -51,6 +57,9 @@ namespace PutZige.Infrastructure.Tests.Repositories
             result.Should().BeFalse();
         }
 
+        /// <summary>
+        /// Returns true when username exists in the database.
+        /// </summary>
         [Fact]
         public async Task IsUsernameTakenAsync_ExistingUsername_ReturnsTrue()
         {
@@ -67,6 +76,9 @@ namespace PutZige.Infrastructure.Tests.Repositories
             result.Should().BeTrue();
         }
 
+        /// <summary>
+        /// Returns false when username does not exist.
+        /// </summary>
         [Fact]
         public async Task IsUsernameTakenAsync_NonExistingUsername_ReturnsFalse()
         {
@@ -80,6 +92,9 @@ namespace PutZige.Infrastructure.Tests.Repositories
             result.Should().BeFalse();
         }
 
+        /// <summary>
+        /// Retrieves a user by email when present.
+        /// </summary>
         [Fact]
         public async Task GetByEmailAsync_ExistingEmail_ReturnsUser()
         {
@@ -97,6 +112,9 @@ namespace PutZige.Infrastructure.Tests.Repositories
             result!.Email.Should().Be(email);
         }
 
+        /// <summary>
+        /// Returns null when email not found.
+        /// </summary>
         [Fact]
         public async Task GetByEmailAsync_NonExistingEmail_ReturnsNull()
         {
@@ -110,6 +128,9 @@ namespace PutZige.Infrastructure.Tests.Repositories
             result.Should().BeNull();
         }
 
+        /// <summary>
+        /// Adds a user and persists it to the database.
+        /// </summary>
         [Fact]
         public async Task AddAsync_ValidUser_SavesSuccessfully()
         {
@@ -127,6 +148,9 @@ namespace PutZige.Infrastructure.Tests.Repositories
             stored!.Username.Should().Be("newuser");
         }
 
+        /// <summary>
+        /// Soft delete sets flags and deletion timestamp.
+        /// </summary>
         [Fact]
         public async Task Delete_ExistingUser_SetsSoftDeleteFlags()
         {

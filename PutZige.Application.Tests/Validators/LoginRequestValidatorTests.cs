@@ -12,6 +12,9 @@ namespace PutZige.Application.Tests.Validators
     {
         private readonly LoginRequestValidator _validator = new();
 
+        /// <summary>
+        /// Valid login request passes validation.
+        /// </summary>
         [Fact]
         public async Task Validate_ValidData_PassesValidation()
         {
@@ -20,6 +23,9 @@ namespace PutZige.Application.Tests.Validators
             result.IsValid.Should().BeTrue();
         }
 
+        /// <summary>
+        /// Empty email fails validation and reports email-related error.
+        /// </summary>
         [Fact]
         public async Task Validate_EmptyEmail_FailsValidation()
         {
@@ -29,6 +35,9 @@ namespace PutZige.Application.Tests.Validators
             result.Errors.Should().Contain(e => e.PropertyName.Equals("email", System.StringComparison.OrdinalIgnoreCase) || e.ErrorMessage == ErrorMessages.Validation.EmailRequired);
         }
 
+        /// <summary>
+        /// Invalid email format fails validation.
+        /// </summary>
         [Fact]
         public async Task Validate_InvalidEmailFormat_FailsValidation()
         {
@@ -38,6 +47,9 @@ namespace PutZige.Application.Tests.Validators
             result.Errors.Should().Contain(e => e.PropertyName.Equals("email", System.StringComparison.OrdinalIgnoreCase) || e.ErrorMessage == ErrorMessages.Validation.EmailInvalidFormat);
         }
 
+        /// <summary>
+        /// Empty password fails validation and reports password-related error.
+        /// </summary>
         [Fact]
         public async Task Validate_EmptyPassword_FailsValidation()
         {

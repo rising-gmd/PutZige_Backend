@@ -55,6 +55,9 @@ namespace PutZige.Application.Tests.Services
             // No unmanaged resources to dispose; mocks will be GC'ed
         }
 
+        /// <summary>
+        /// Registers a user with valid input and returns a mapped RegisterUserResponse.
+        /// </summary>
         [Fact]
         public async Task RegisterUserAsync_ValidData_ReturnsUserResponse()
         {
@@ -118,6 +121,9 @@ namespace PutZige.Application.Tests.Services
             capturedUser.EmailVerificationTokenExpiry.Should().BeAfter(DateTime.UtcNow);
         }
 
+        /// <summary>
+        /// Ensures password is hashed and salt stored when registering a new user.
+        /// </summary>
         [Fact]
         public async Task RegisterUserAsync_ValidData_HashesPassword()
         {
@@ -156,6 +162,9 @@ namespace PutZige.Application.Tests.Services
             capturedUser.PasswordSalt.Should().Be("salt-" + password);
         }
 
+        /// <summary>
+        /// Generates a URL-safe email verification token and sets expiry when registering.
+        /// </summary>
         [Fact]
         public async Task RegisterUserAsync_ValidData_GeneratesVerificationToken()
         {
@@ -200,6 +209,9 @@ namespace PutZige.Application.Tests.Services
             capturedUser.EmailVerificationTokenExpiry.Should().BeCloseTo(expectedExpiry, precision: TimeSpan.FromSeconds(5));
         }
 
+        /// <summary>
+        /// Persists a newly registered user to the repository and commits the unit of work.
+        /// </summary>
         [Fact]
         public async Task RegisterUserAsync_ValidData_SavesUserToRepository()
         {
@@ -232,6 +244,9 @@ namespace PutZige.Application.Tests.Services
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         }
 
+        /// <summary>
+        /// Maps created User to RegisterUserResponse DTO using AutoMapper.
+        /// </summary>
         [Fact]
         public async Task RegisterUserAsync_ValidData_MapsToResponseDto()
         {
@@ -271,6 +286,9 @@ namespace PutZige.Application.Tests.Services
             result.UserId.Should().Be(responseReturned.UserId);
         }
 
+        /// <summary>
+        /// Throws InvalidOperationException when attempting to register with an email that already exists.
+        /// </summary>
         [Fact]
         public async Task RegisterUserAsync_DuplicateEmail_ThrowsInvalidOperationException()
         {
@@ -294,6 +312,9 @@ namespace PutZige.Application.Tests.Services
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         }
 
+        /// <summary>
+        /// Throws InvalidOperationException when attempting to register with a username that is already taken.
+        /// </summary>
         [Fact]
         public async Task RegisterUserAsync_DuplicateUsername_ThrowsInvalidOperationException()
         {
@@ -318,6 +339,9 @@ namespace PutZige.Application.Tests.Services
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         }
 
+        /// <summary>
+        /// Throws ArgumentException when email parameter is null or empty.
+        /// </summary>
         [Fact]
         public async Task RegisterUserAsync_NullEmail_ThrowsArgumentException()
         {
@@ -336,6 +360,9 @@ namespace PutZige.Application.Tests.Services
             _mockUserRepository.Verify(x => x.IsEmailTakenAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
+        /// <summary>
+        /// Throws ArgumentException when username is empty.
+        /// </summary>
         [Fact]
         public async Task RegisterUserAsync_EmptyUsername_ThrowsArgumentException()
         {
@@ -354,6 +381,9 @@ namespace PutZige.Application.Tests.Services
             _mockUserRepository.Verify(x => x.IsUsernameTakenAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
+        /// <summary>
+        /// Throws ArgumentException when password is null or empty.
+        /// </summary>
         [Fact]
         public async Task RegisterUserAsync_NullPassword_ThrowsArgumentException()
         {
@@ -414,7 +444,7 @@ namespace PutZige.Application.Tests.Services
         }
 
         /// <summary>
-        /// Verifies that UpdateLoginInfoAsync creates a new session when none exists and sets session fields appropriately.
+        /// Creates a new session when none exists and sets refresh token and activity details.
         /// </summary>
         [Fact]
         public async Task UpdateLoginInfoAsync_CreatesNewSession_WhenSessionNull()
@@ -457,7 +487,7 @@ namespace PutZige.Application.Tests.Services
         }
 
         /// <summary>
-        /// Verifies that UpdateLoginInfoAsync updates an existing session instance rather than recreating it.
+        /// Updates fields on an existing session instance instead of replacing it.
         /// </summary>
         [Fact]
         public async Task UpdateLoginInfoAsync_UpdatesExistingSession_WhenSessionExists()
@@ -510,7 +540,7 @@ namespace PutZige.Application.Tests.Services
         }
 
         /// <summary>
-        /// Verifies that UpdateLoginInfoAsync resets failed login attempts on successful login and updates login timestamps/ip.
+        /// Resets failed login attempts and updates last login timestamp and IP on successful login.
         /// </summary>
         [Fact]
         public async Task UpdateLoginInfoAsync_ResetsFailedLoginAttempts_OnSuccess()
