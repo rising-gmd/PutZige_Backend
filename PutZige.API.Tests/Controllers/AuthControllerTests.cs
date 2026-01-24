@@ -14,11 +14,32 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using PutZige.Domain.Entities;
 using System.Collections.Generic;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace PutZige.API.Tests.Controllers
 {
     public class AuthControllerTests : IntegrationTestBase
     {
+        private static (string hash, string salt) CreateHash(string plain)
+        {
+            var salt = new byte[32];
+            RandomNumberGenerator.Fill(salt);
+            var derived = Rfc2898DeriveBytes.Pbkdf2(Encoding.UTF8.GetBytes(plain), salt, 100000, HashAlgorithmName.SHA512, 64);
+            return (Convert.ToBase64String(derived), Convert.ToBase64String(salt));
+        }
+
+        private static bool VerifyHash(string plain, string hashBase64, string saltBase64)
+        {
+            var salt = Convert.FromBase64String(saltBase64);
+            var derived = Rfc2898DeriveBytes.Pbkdf2(Encoding.UTF8.GetBytes(plain), salt, 100000, HashAlgorithmName.SHA512, 64);
+            var derivedBase64 = Convert.ToBase64String(derived);
+            var a = Convert.FromBase64String(derivedBase64);
+            var b = Convert.FromBase64String(hashBase64);
+            return CryptographicOperations.FixedTimeEquals(a, b);
+        }
+
         [Fact]
         public async Task Register_ValidRequest_Returns201Created()
         {
@@ -115,7 +136,8 @@ namespace PutZige.API.Tests.Controllers
             var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email == email);
             user.Should().NotBeNull();
             user!.PasswordHash.Should().NotBeNullOrWhiteSpace();
-            BCrypt.Net.BCrypt.Verify(plain, user.PasswordHash).Should().BeTrue();
+            user.PasswordSalt.Should().NotBeNullOrWhiteSpace();
+            VerifyHash(plain, user.PasswordHash, user.PasswordSalt).Should().BeTrue();
         }
 
         [Fact]
@@ -128,7 +150,8 @@ namespace PutZige.API.Tests.Controllers
             using (var scope = Factory.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                await db.Users.AddAsync(new User { Email = email, Username = "u", PasswordHash = "h", DisplayName = "d" });
+                var hashed = CreateHash("P@ss1");
+                await db.Users.AddAsync(new User { Email = email, Username = "u", PasswordHash = hashed.hash, PasswordSalt = hashed.salt, DisplayName = "d" });
                 await db.SaveChangesAsync();
             }
 
@@ -187,6 +210,172 @@ namespace PutZige.API.Tests.Controllers
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
             result.Should().NotBeNull();
             result!.Errors.Should().ContainKey("email");
+        }
+
+        [Fact]
+        public async Task Login_ValidCredentials_Returns200OK()
+        {
+            // Arrange: seed user
+            var email = "intlogin@example.com";
+            using (var scope = Factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var hashed = CreateHash("Password123!");
+                db.Users.Add(new User { Email = email, Username = "intlogin", DisplayName = "Int Login", PasswordHash = hashed.hash, PasswordSalt = hashed.salt, IsEmailVerified = true, IsActive = true });
+                await db.SaveChangesAsync();
+            }
+
+            var request = new LoginRequest { Email = email, Password = "Password123!" };
+
+            // Act
+            var response = await Client.PostAsJsonAsync("/api/v1/auth/login", request);
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            var payload = await response.Content.ReadFromJsonAsync<ApiResponse<LoginResponse>>();
+            payload.Should().NotBeNull();
+            payload!.Data.Should().NotBeNull();
+            payload.Data!.AccessToken.Should().NotBeNullOrWhiteSpace();
+            payload.Data.RefreshToken.Should().NotBeNullOrWhiteSpace();
+        }
+
+        [Fact]
+        public async Task Login_InvalidPassword_Returns400BadRequest()
+        {
+            var email = "intbadpass@example.com";
+            using (var scope = Factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var hashed = CreateHash("RightPass1!");
+                db.Users.Add(new User { Email = email, Username = "badpass", DisplayName = "Bad Pass", PasswordHash = hashed.hash, PasswordSalt = hashed.salt, IsEmailVerified = true, IsActive = true });
+                await db.SaveChangesAsync();
+            }
+
+            var request = new LoginRequest { Email = email, Password = "WrongPass!" };
+            var response = await Client.PostAsJsonAsync("/api/v1/auth/login", request);
+            response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        }
+
+        [Fact]
+        public async Task Login_FiveFailedAttempts_LocksAccount()
+        {
+            // Arrange
+            var email = "lockme@example.com";
+            var correct = "Correct1!";
+            using (var scope = Factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var hashed = CreateHash(correct);
+                db.Users.Add(new User { Email = email, Username = "lockme", DisplayName = "Lock Me", PasswordHash = hashed.hash, PasswordSalt = hashed.salt, IsEmailVerified = true, IsActive = true });
+                await db.SaveChangesAsync();
+            }
+
+            var wrongRequest = new LoginRequest { Email = email, Password = "Wrong1!" };
+
+            // Act: perform 5 failed attempts
+            for (int i = 0; i < 5; i++)
+            {
+                var r = await Client.PostAsJsonAsync("/api/v1/auth/login", wrongRequest);
+                r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+            }
+
+            // Assert: user is locked in DB
+            using (var scope = Factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email == email);
+                user.Should().NotBeNull();
+                user!.IsLocked.Should().BeTrue();
+                user.LockedUntil.Should().BeAfter(DateTime.UtcNow);
+            }
+        }
+
+        [Fact]
+        public async Task Login_LockedAccount_Returns400BadRequest()
+        {
+            var email = "prelocked@example.com";
+            var password = "P@ssword1";
+            using (var scope = Factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var hashed = CreateHash(password);
+                db.Users.Add(new User { Email = email, Username = "prelocked", DisplayName = "Pre Locked", PasswordHash = hashed.hash, PasswordSalt = hashed.salt, IsEmailVerified = true, IsActive = true, IsLocked = true, LockedUntil = DateTime.UtcNow.AddMinutes(15) });
+                await db.SaveChangesAsync();
+            }
+
+            var request = new LoginRequest { Email = email, Password = password };
+            var response = await Client.PostAsJsonAsync("/api/v1/auth/login", request);
+            response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        }
+
+        [Fact]
+        public async Task Login_NonExistentEmail_Returns400BadRequest()
+        {
+            var request = new LoginRequest { Email = "doesnotexist@example.com", Password = "Whatever1!" };
+            var response = await Client.PostAsJsonAsync("/api/v1/auth/login", request);
+            response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        }
+
+        [Fact]
+        public async Task Login_MissingFields_Returns400BadRequest()
+        {
+            var invalidRequest = new { password = "Password1!" }; // missing email
+            var response = await Client.PostAsJsonAsync("/api/v1/auth/login", invalidRequest);
+            response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
+            result.Should().NotBeNull();
+            result!.Errors.Should().NotBeNull();
+            // Accept either explicit 'email' field or JSON-deserialization root errors that mention email
+            var hasEmailKey = result.Errors.ContainsKey("email");
+            var hasEmailInMessages = result.Errors.Values.SelectMany(v => v ?? Array.Empty<string>()).Any(m => m != null && m.IndexOf("email", StringComparison.OrdinalIgnoreCase) >= 0);
+            (hasEmailKey || hasEmailInMessages).Should().BeTrue("expected validation to mention the missing 'email' field in either key or message");
+        }
+
+        [Fact]
+        public async Task RefreshToken_ValidToken_Returns200OK()
+        {
+            // Arrange: seed user with session
+            var email = "intrefresh@example.com";
+            string refresh = "seed-refresh-token";
+            using (var scope = Factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var hashed = CreateHash(refresh);
+                var user = new User { Email = email, Username = "refuser", DisplayName = "Ref User", PasswordHash = CreateHash("Pass1!").hash, PasswordSalt = CreateHash("Pass1!").salt, IsEmailVerified = true, IsActive = true };
+                user.Session = new UserSession { RefreshTokenHash = hashed.hash, RefreshTokenSalt = hashed.salt, RefreshTokenExpiry = DateTime.UtcNow.AddDays(1), IsOnline = true };
+                db.Users.Add(user);
+                await db.SaveChangesAsync();
+            }
+
+            var request = new RefreshTokenRequest { RefreshToken = refresh };
+            var response = await Client.PostAsJsonAsync("/api/v1/auth/refresh-token", request);
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            var payload = await response.Content.ReadFromJsonAsync<ApiResponse<RefreshTokenResponse>>();
+            payload.Should().NotBeNull();
+            payload!.Data.Should().NotBeNull();
+            payload.Data!.AccessToken.Should().NotBeNullOrWhiteSpace();
+            payload.Data.RefreshToken.Should().NotBeNullOrWhiteSpace();
+        }
+
+        [Fact]
+        public async Task RefreshToken_ExpiredToken_Returns400BadRequest()
+        {
+            // Arrange: seed user with expired token
+            var email = "expiredrefresh@example.com";
+            string refresh = "expired-token";
+            using (var scope = Factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var hashed = CreateHash(refresh);
+                var user = new User { Email = email, Username = "expiredref", DisplayName = "Expired Ref", PasswordHash = CreateHash("Pass1!").hash, PasswordSalt = CreateHash("Pass1!").salt, IsEmailVerified = true, IsActive = true };
+                user.Session = new UserSession { RefreshTokenHash = hashed.hash, RefreshTokenSalt = hashed.salt, RefreshTokenExpiry = DateTime.UtcNow.AddDays(-1), IsOnline = true };
+                db.Users.Add(user);
+                await db.SaveChangesAsync();
+            }
+
+            var request = new RefreshTokenRequest { RefreshToken = refresh };
+            var response = await Client.PostAsJsonAsync("/api/v1/auth/refresh-token", request);
+            response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
     }
 }

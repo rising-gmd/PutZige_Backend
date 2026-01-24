@@ -10,6 +10,7 @@ using AutoMapper;
 using Microsoft.Extensions.Logging;
 using PutZige.Application.Services;
 using PutZige.Application.Interfaces;
+using PutZige.Application.DTOs;
 using PutZige.Application.DTOs.Auth;
 using PutZige.Domain.Interfaces;
 using PutZige.Domain.Entities;
@@ -24,6 +25,7 @@ namespace PutZige.Application.Tests.Services
         private readonly Mock<IUnitOfWork> _mockUnitOfWork;
         private readonly Mock<IMapper> _mockMapper;
         private readonly Mock<ILogger<UserService>> _mockLogger;
+        private readonly Mock<IHashingService> _mockHashingService;
         private readonly UserService _sut;
         private readonly Faker _faker;
         private readonly CancellationToken _ct = CancellationToken.None;
@@ -34,12 +36,17 @@ namespace PutZige.Application.Tests.Services
             _mockUnitOfWork = new Mock<IUnitOfWork>();
             _mockMapper = new Mock<IMapper>();
             _mockLogger = new Mock<ILogger<UserService>>();
+            _mockHashingService = new Mock<IHashingService>();
             _faker = new Faker();
+
+            _mockHashingService.Setup(h => h.GenerateSecureToken(It.IsAny<int>())).Returns(() => Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Replace("+","-").Replace("/","_").TrimEnd('='));
+            _mockHashingService.Setup(h => h.HashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync((string s, CancellationToken ct) => new HashedValue("hash-"+s, "salt-"+s));
 
             _sut = new UserService(
                 _mockUserRepository.Object,
                 _mockUnitOfWork.Object,
                 _mockMapper.Object,
+                _mockHashingService.Object,
                 _mockLogger.Object);
         }
 
@@ -145,9 +152,8 @@ namespace PutZige.Application.Tests.Services
             // Assert
             capturedUser.Should().NotBeNull();
             capturedUser!.PasswordHash.Should().NotBeNullOrWhiteSpace();
-            // Verify BCrypt hash: check that the hash does not equal the plain password and verifies correctly
-            capturedUser.PasswordHash.Should().NotBe(password);
-            BCrypt.Net.BCrypt.Verify(password, capturedUser.PasswordHash).Should().BeTrue();
+            capturedUser.PasswordHash.Should().Be("hash-" + password);
+            capturedUser.PasswordSalt.Should().Be("salt-" + password);
         }
 
         [Fact]

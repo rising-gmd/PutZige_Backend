@@ -31,5 +31,9 @@ namespace PutZige.Application.Interfaces
         /// </summary>
         Task SoftDeleteUserAsync(Guid userId, CancellationToken ct = default);
 
+        /// <summary>
+        /// Updates user's last login info and session details.
+        /// </summary>
+        Task UpdateLoginInfoAsync(Guid userId, string? ipAddress, string refreshToken, DateTime refreshTokenExpiry, CancellationToken ct = default);
     }
 }

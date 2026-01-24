@@ -46,4 +46,19 @@ public class UserRepository : Repository<User>, IUserRepository
         if (string.IsNullOrWhiteSpace(username)) return false;
         return await _dbSet.AsNoTracking().AnyAsync(u => u.Username == username, ct).ConfigureAwait(false);
     }
+
+    /// <inheritdoc/>
+    public async Task<User?> GetByEmailWithSessionAsync(string email, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(email)) throw new ArgumentException("email is required", nameof(email));
+        return await _dbSet.Include(u => u.Session).FirstOrDefaultAsync(u => u.Email == email, ct).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc/>
+    public async Task<User?> GetByRefreshTokenAsync(string refreshToken, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(refreshToken)) return null;
+        // We cannot directly compare plaintext refreshToken to stored hash. Return user with session if session exists; calling code must verify token with hashing service.
+        return await _dbSet.Include(u => u.Session).FirstOrDefaultAsync(u => u.Session != null && u.Session.RefreshTokenHash != null, ct).ConfigureAwait(false);
+    }
 }

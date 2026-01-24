@@ -13,7 +13,8 @@ namespace PutZige.Domain.Entities
         public string? DeviceTokens { get; set; }
 
         // JWT refresh token details
-        public string? CurrentRefreshToken { get; set; }
+        public string? RefreshTokenHash { get; set; }
+        public string? RefreshTokenSalt { get; set; }
         public DateTime? RefreshTokenExpiry { get; set; }
 
         public User? User { get; set; }

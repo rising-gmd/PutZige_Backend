@@ -1,10 +1,14 @@
 using FluentValidation.AspNetCore;
 using Microsoft.OpenApi;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using PutZige.API.Configuration;
 using PutZige.API.Filters;
 using PutZige.API.Middleware;
 using PutZige.Application;
 using PutZige.Infrastructure;
+using PutZige.Application.Settings;
 using Serilog;
 
 // Bootstrap logger for startup errors
@@ -53,6 +57,35 @@ try
     // Register layer services
     builder.Services.AddApplicationServices();
     builder.Services.AddInfrastructureServices(builder.Configuration, builder.Environment);
+
+    // JWT Authentication
+    var jwtSection = builder.Configuration.GetSection(JwtSettings.SectionName);
+    var jwtSettings = jwtSection.Get<JwtSettings>();
+    if (jwtSettings != null)
+    {
+        var key = Encoding.UTF8.GetBytes(jwtSettings.Secret);
+        builder.Services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+            options.RequireHttpsMetadata = false;
+            options.SaveToken = true;
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = jwtSettings.Issuer,
+                ValidateAudience = true,
+                ValidAudience = jwtSettings.Audience,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(key),
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.FromSeconds(30)
+            };
+        });
+    }
 
     var app = builder.Build();
 

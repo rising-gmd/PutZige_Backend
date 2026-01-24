@@ -29,5 +29,15 @@ namespace PutZige.Domain.Interfaces
         /// Checks if a username is already taken.
         /// </summary>
         Task<bool> IsUsernameTakenAsync(string username, CancellationToken ct = default);
+
+        /// <summary>
+        /// Gets a user by email including session navigation.
+        /// </summary>
+        Task<User?> GetByEmailWithSessionAsync(string email, CancellationToken ct = default);
+
+        /// <summary>
+        /// Gets a user by refresh token via session.
+        /// </summary>
+        Task<User?> GetByRefreshTokenAsync(string refreshToken, CancellationToken ct = default);
     }
 }

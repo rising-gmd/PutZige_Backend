@@ -4,11 +4,11 @@ using System;
 namespace PutZige.Application.DTOs.Auth
 {
     /// <summary>
-    /// Placeholder for future login request model.
+    /// Request payload for logging in a user.
     /// </summary>
     public sealed class LoginRequest
     {
-        public required string Email { get; init; }
-        public required string Password { get; init; }
+        public string Email { get; init; }
+        public string Password { get; init; }
     }
 }

@@ -1,0 +1,293 @@
+#nullable enable
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Xunit;
+using FluentAssertions;
+using Moq;
+using AutoMapper;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using PutZige.Application.Services;
+using PutZige.Application.Interfaces;
+using PutZige.Application.DTOs;
+using PutZige.Application.DTOs.Auth;
+using PutZige.Domain.Interfaces;
+using PutZige.Domain.Entities;
+using PutZige.Application.Settings;
+using PutZige.Application.Common.Messages;
+
+namespace PutZige.Application.Tests.Services
+{
+    public class AuthServiceTests
+    {
+        private readonly Mock<IUserRepository> _userRepo = new();
+        private readonly Mock<IUnitOfWork> _uow = new();
+        private readonly Mock<IUserService> _userService = new();
+        private readonly Mock<IMapper> _mapper = new();
+        private readonly Mock<ILogger<AuthService>> _logger = new();
+        private readonly Mock<IClientInfoService> _mockClientInfo = new();
+        private readonly Mock<IHashingService> _mockHashingService = new();
+
+        private readonly JwtSettings _jwtSettings = new() { Secret = "TestSecretKeyThatIsLongEnough-1234567890", Issuer = "PutZige", Audience = "PutZige.Users", AccessTokenExpiryMinutes = 15, RefreshTokenExpiryDays = 7 };
+
+        private IJwtTokenService CreateJwtService() => new TestJwtTokenService();
+
+        public AuthServiceTests()
+        {
+            _mockClientInfo.Setup(c => c.GetIpAddress()).Returns("127.0.0.1");
+            _mockClientInfo.Setup(c => c.GetUserAgent()).Returns("UnitTestAgent/1.0");
+
+            _mockHashingService.Setup(h => h.VerifyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
+            _mockHashingService.Setup(h => h.HashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync((string s, CancellationToken ct) => new HashedValue("hash-"+s, "salt-"+s));
+        }
+
+        [Fact]
+        public async Task LoginAsync_ValidCredentials_ReturnsLoginResponse()
+        {
+            // Arrange
+            var email = "user@test.com";
+            var password = "Password123!";
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = email,
+                Username = "user1",
+                DisplayName = "User One",
+                PasswordHash = "hash-Password123!",
+                PasswordSalt = "salt-Password123!",
+                IsActive = true,
+                IsEmailVerified = true
+            };
+
+            _userRepo.Setup(x => x.GetByEmailWithSessionAsync(email, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+            _uow.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+            var svc = new AuthService(_userRepo.Object, _uow.Object, CreateJwtService(), _userService.Object, _mapper.Object, Options.Create(_jwtSettings), _mockClientInfo.Object, _mockHashingService.Object, _logger.Object);
+
+            // Act
+            var result = await svc.LoginAsync(email, password, CancellationToken.None);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.AccessToken.Should().NotBeNullOrWhiteSpace();
+            result.RefreshToken.Should().NotBeNullOrWhiteSpace();
+            result.Email.Should().Be(email);
+            _userRepo.Verify(x => x.GetByEmailWithSessionAsync(email, It.IsAny<CancellationToken>()), Times.Once);
+            _uow.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+        }
+
+        [Fact]
+        public async Task LoginAsync_InvalidPassword_IncrementsFailedAttempts_AndLocksOnFifth()
+        {
+            // Arrange
+            var email = "baduser@test.com";
+            var correct = "CorrectPass1!";
+            var wrong = "WrongPass!";
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = email,
+                Username = "baduser",
+                DisplayName = "Bad User",
+                PasswordHash = "hash-CorrectPass1!",
+                PasswordSalt = "salt-CorrectPass1!",
+                IsActive = true,
+                IsEmailVerified = true,
+                FailedLoginAttempts = 0
+            };
+
+            _mockHashingService.Setup(h => h.VerifyAsync(wrong, user.PasswordHash, user.PasswordSalt, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+            _userRepo.Setup(x => x.GetByEmailWithSessionAsync(email, It.IsAny<CancellationToken>())).ReturnsAsync(() => user);
+            _uow.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+            var svc = new AuthService(_userRepo.Object, _uow.Object, CreateJwtService(), _userService.Object, _mapper.Object, Options.Create(_jwtSettings), _mockClientInfo.Object, _mockHashingService.Object, _logger.Object);
+
+            // Act & Assert: perform 4 failed attempts
+            for (int i = 1; i <= 4; i++)
+            {
+                Func<Task> act = async () => await svc.LoginAsync(email, wrong, CancellationToken.None);
+                await act.Should().ThrowAsync<InvalidOperationException>().WithMessage(ErrorMessages.Authentication.InvalidCredentials + "*");
+                user.FailedLoginAttempts.Should().Be(i);
+                user.IsLocked.Should().BeFalse();
+            }
+
+            // 5th attempt locks
+            Func<Task> act5 = async () => await svc.LoginAsync(email, wrong, CancellationToken.None);
+            await act5.Should().ThrowAsync<InvalidOperationException>().WithMessage(ErrorMessages.Authentication.InvalidCredentials + "*");
+            user.FailedLoginAttempts.Should().Be(5);
+            user.IsLocked.Should().BeTrue();
+            user.LockedUntil.Should().BeAfter(DateTime.UtcNow);
+        }
+
+        [Fact]
+        public async Task LoginAsync_LockedAccount_ThrowsInvalidOperationException()
+        {
+            // Arrange
+            var email = "locked@test.com";
+            var password = "Whatever1!";
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = email,
+                Username = "locked",
+                PasswordHash = "hash-Whatever1!",
+                PasswordSalt = "salt-Whatever1!",
+                IsActive = true,
+                IsEmailVerified = true,
+                IsLocked = true,
+                LockedUntil = DateTime.UtcNow.AddMinutes(10)
+            };
+
+            _userRepo.Setup(x => x.GetByEmailWithSessionAsync(email, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+
+            var svc = new AuthService(_userRepo.Object, _uow.Object, CreateJwtService(), _userService.Object, _mapper.Object, Options.Create(_jwtSettings), _mockClientInfo.Object, _mockHashingService.Object, _logger.Object);
+
+            // Act
+            Func<Task> act = async () => await svc.LoginAsync(email, password, CancellationToken.None);
+
+            // Assert
+            await act.Should().ThrowAsync<InvalidOperationException>().WithMessage(ErrorMessages.Authentication.AccountLocked + "*");
+        }
+
+        [Fact]
+        public async Task LoginAsync_NonExistentEmail_ThrowsInvalidOperationException()
+        {
+            // Arrange
+            var email = "noexist@test.com";
+            _userRepo.Setup(x => x.GetByEmailWithSessionAsync(email, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
+
+            var svc = new AuthService(_userRepo.Object, _uow.Object, CreateJwtService(), _userService.Object, _mapper.Object, Options.Create(_jwtSettings), _mockClientInfo.Object, _mockHashingService.Object, _logger.Object);
+
+            // Act
+            Func<Task> act = async () => await svc.LoginAsync(email, "any", CancellationToken.None);
+
+            // Assert
+            await act.Should().ThrowAsync<InvalidOperationException>().WithMessage(ErrorMessages.Authentication.InvalidCredentials + "*");
+        }
+
+        [Fact]
+        public async Task LoginAsync_InactiveAccount_ThrowsInvalidOperationException()
+        {
+            // Arrange
+            var email = "inactive@test.com";
+            var user = new User { Email = email, PasswordHash = "hash-P1!", PasswordSalt = "salt-P1!", IsActive = false, IsEmailVerified = true };
+            _userRepo.Setup(x => x.GetByEmailWithSessionAsync(email, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+
+            var svc = new AuthService(_userRepo.Object, _uow.Object, CreateJwtService(), _userService.Object, _mapper.Object, Options.Create(_jwtSettings), _mockClientInfo.Object, _mockHashingService.Object, _logger.Object);
+
+            Func<Task> act = async () => await svc.LoginAsync(email, "P1!", CancellationToken.None);
+            await act.Should().ThrowAsync<InvalidOperationException>().WithMessage(ErrorMessages.Authentication.AccountInactive + "*");
+        }
+
+        [Fact]
+        public async Task LoginAsync_UnverifiedEmail_ThrowsInvalidOperationException()
+        {
+            // Arrange
+            var email = "unverified@test.com";
+            var user = new User { Email = email, PasswordHash = "hash-P1!", PasswordSalt = "salt-P1!", IsActive = true, IsEmailVerified = false };
+            _userRepo.Setup(x => x.GetByEmailWithSessionAsync(email, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+
+            var svc = new AuthService(_userRepo.Object, _uow.Object, CreateJwtService(), _userService.Object, _mapper.Object, Options.Create(_jwtSettings), _mockClientInfo.Object, _mockHashingService.Object, _logger.Object);
+
+            Func<Task> act = async () => await svc.LoginAsync(email, "P1!", CancellationToken.None);
+            await act.Should().ThrowAsync<InvalidOperationException>().WithMessage(ErrorMessages.Authentication.EmailNotVerified + "*");
+        }
+
+        [Fact]
+        public async Task RefreshTokenAsync_ValidToken_ReturnsNewAccessToken()
+        {
+            // Arrange
+            var email = "refresh@test.com";
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = email,
+                Username = "refuser",
+                PasswordHash = "hash-P@ssw0rd",
+                PasswordSalt = "salt-P@ssw0rd",
+                IsActive = true,
+                IsEmailVerified = true,
+                Session = new UserSession
+                {
+                    RefreshTokenHash = "hash-valid-refresh",
+                    RefreshTokenSalt = "salt-valid-refresh",
+                    RefreshTokenExpiry = DateTime.UtcNow.AddDays(1)
+                }
+            };
+
+            _mockHashingService.Setup(h => h.VerifyAsync("valid-refresh", user.Session.RefreshTokenHash!, user.Session.RefreshTokenSalt!, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+            _userRepo.Setup(x => x.GetByRefreshTokenAsync("valid-refresh", It.IsAny<CancellationToken>())).ReturnsAsync(user);
+            _uow.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+            var svc = new AuthService(_userRepo.Object, _uow.Object, CreateJwtService(), _userService.Object, _mapper.Object, Options.Create(_jwtSettings), _mockClientInfo.Object, _mockHashingService.Object, _logger.Object);
+
+            // Act
+            var resp = await svc.RefreshTokenAsync("valid-refresh", CancellationToken.None);
+
+            // Assert
+            resp.Should().NotBeNull();
+            resp.AccessToken.Should().NotBeNullOrWhiteSpace();
+            resp.RefreshToken.Should().NotBeNullOrWhiteSpace();
+            user.Session!.RefreshTokenHash.Should().NotBe("valid-refresh");
+            _uow.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task RefreshTokenAsync_ExpiredToken_ThrowsInvalidOperationException()
+        {
+            // Arrange
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = "expired@test.com",
+                Session = new UserSession
+                {
+                    RefreshTokenHash = "hash-old-refresh",
+                    RefreshTokenSalt = "salt-old-refresh",
+                    RefreshTokenExpiry = DateTime.UtcNow.AddDays(-1)
+                }
+            };
+
+            _userRepo.Setup(x => x.GetByRefreshTokenAsync("old-refresh", It.IsAny<CancellationToken>())).ReturnsAsync(user);
+
+            var svc = new AuthService(_userRepo.Object, _uow.Object, CreateJwtService(), _userService.Object, _mapper.Object, Options.Create(_jwtSettings), _mockClientInfo.Object, _mockHashingService.Object, _logger.Object);
+
+            // Act
+            Func<Task> act = async () => await svc.RefreshTokenAsync("old-refresh", CancellationToken.None);
+
+            await act.Should().ThrowAsync<InvalidOperationException>().WithMessage(ErrorMessages.Authentication.InvalidRefreshToken + "*");
+        }
+
+        [Fact]
+        public async Task RefreshTokenAsync_InvalidToken_ThrowsInvalidOperationException()
+        {
+            // Arrange
+            _userRepo.Setup(x => x.GetByRefreshTokenAsync("bad-token", It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
+
+            var svc = new AuthService(_userRepo.Object, _uow.Object, CreateJwtService(), _userService.Object, _mapper.Object, Options.Create(_jwtSettings), _mockClientInfo.Object, _mockHashingService.Object, _logger.Object);
+
+            Func<Task> act = async () => await svc.RefreshTokenAsync("bad-token", CancellationToken.None);
+            await act.Should().ThrowAsync<InvalidOperationException>().WithMessage(ErrorMessages.Authentication.InvalidRefreshToken + "*");
+        }
+
+        private class TestJwtTokenService : IJwtTokenService
+        {
+            public string GenerateAccessToken(Guid userId, string email, string username, int expiryMinutes, out DateTime expiresAt)
+            {
+                expiresAt = DateTime.UtcNow.AddMinutes(expiryMinutes);
+                return $"access-{userId}";
+            }
+
+            public string GenerateRefreshToken()
+            {
+                return Guid.NewGuid().ToString("N");
+            }
+
+            public System.Security.Claims.ClaimsPrincipal? ValidateToken(string token, bool validateLifetime = true)
+            {
+                return null;
+            }
+        }
+    }
+}
