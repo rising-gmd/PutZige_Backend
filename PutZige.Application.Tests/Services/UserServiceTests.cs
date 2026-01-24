@@ -372,5 +372,183 @@ namespace PutZige.Application.Tests.Services
             _mockUserRepository.Verify(x => x.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         }
+
+        /// <summary>
+        /// Verifies that UpdateLoginInfoAsync hashes the refresh token and stores both hash and salt on the session.
+        /// </summary>
+        [Fact]
+        public async Task UpdateLoginInfoAsync_HashesRefreshToken_StoresBothHashAndSalt()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var user = new User
+            {
+                Id = userId,
+                Email = "existing@example.com",
+                Username = "existing",
+                DisplayName = "Existing User"
+            };
+
+            var refreshToken = "refresh-token-xyz";
+            var expiry = DateTime.UtcNow.AddDays(7);
+
+            _mockUserRepository.Setup(x => x.GetByIdAsync(userId, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+
+            _mockHashingService.Setup(h => h.HashAsync(refreshToken, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new HashedValue("hashed-refresh", "refresh-salt"));
+
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+            // Act
+            await _sut.UpdateLoginInfoAsync(userId, "127.0.0.1", refreshToken, expiry, _ct);
+
+            // Assert
+            _mockHashingService.Verify(h => h.HashAsync(refreshToken, It.IsAny<CancellationToken>()), Times.Once);
+
+            user.Session.Should().NotBeNull();
+            user.Session!.RefreshTokenHash.Should().Be("hashed-refresh");
+            user.Session!.RefreshTokenSalt.Should().Be("refresh-salt");
+            user.Session!.RefreshTokenExpiry.Should().Be(expiry);
+
+            _mockUnitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        /// <summary>
+        /// Verifies that UpdateLoginInfoAsync creates a new session when none exists and sets session fields appropriately.
+        /// </summary>
+        [Fact]
+        public async Task UpdateLoginInfoAsync_CreatesNewSession_WhenSessionNull()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var user = new User
+            {
+                Id = userId,
+                Email = "sessionnull@example.com",
+                Username = "sessionnull",
+                DisplayName = "Session Null",
+                Session = null
+            };
+
+            var refreshToken = "new-refresh-token";
+            var expiry = DateTime.UtcNow.AddDays(14);
+
+            _mockUserRepository.Setup(x => x.GetByIdAsync(userId, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+
+            _mockHashingService.Setup(h => h.HashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new HashedValue("rt-hash", "rt-salt"));
+
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+            // Act
+            var before = DateTime.UtcNow;
+            await _sut.UpdateLoginInfoAsync(userId, "10.0.0.1", refreshToken, expiry, _ct);
+            var after = DateTime.UtcNow;
+
+            // Assert
+            user.Session.Should().NotBeNull();
+            user.Session!.UserId.Should().Be(user.Id);
+            user.Session!.RefreshTokenHash.Should().Be("rt-hash");
+            user.Session!.RefreshTokenSalt.Should().Be("rt-salt");
+            user.Session!.IsOnline.Should().BeTrue();
+            user.Session!.LastActiveAt.Should().BeOnOrAfter(before).And.BeOnOrBefore(after);
+
+            _mockUnitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        /// <summary>
+        /// Verifies that UpdateLoginInfoAsync updates an existing session instance rather than recreating it.
+        /// </summary>
+        [Fact]
+        public async Task UpdateLoginInfoAsync_UpdatesExistingSession_WhenSessionExists()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var existingSession = new UserSession
+            {
+                UserId = userId,
+                RefreshTokenHash = "old-hash",
+                RefreshTokenSalt = "old-salt",
+                IsOnline = false,
+                LastActiveAt = DateTime.UtcNow.AddDays(-1)
+            };
+
+            var user = new User
+            {
+                Id = userId,
+                Email = "existingsession@example.com",
+                Username = "existingsession",
+                DisplayName = "Existing Session",
+                Session = existingSession
+            };
+
+            var refreshToken = "another-refresh-token";
+            var expiry = DateTime.UtcNow.AddDays(30);
+
+            _mockUserRepository.Setup(x => x.GetByIdAsync(userId, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+
+            _mockHashingService.Setup(h => h.HashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new HashedValue("new-hash", "new-salt"));
+
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+            // Act
+            var before = DateTime.UtcNow;
+            await _sut.UpdateLoginInfoAsync(userId, "192.168.0.5", refreshToken, expiry, _ct);
+            var after = DateTime.UtcNow;
+
+            // Assert
+            // Same instance should be updated
+            ReferenceEquals(user.Session, existingSession).Should().BeTrue();
+
+            user.Session!.RefreshTokenHash.Should().Be("new-hash");
+            user.Session!.RefreshTokenSalt.Should().Be("new-salt");
+            user.Session!.IsOnline.Should().BeTrue();
+            user.Session!.LastActiveAt.Should().BeOnOrAfter(before).And.BeOnOrBefore(after);
+
+            _mockUnitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        /// <summary>
+        /// Verifies that UpdateLoginInfoAsync resets failed login attempts on successful login and updates login timestamps/ip.
+        /// </summary>
+        [Fact]
+        public async Task UpdateLoginInfoAsync_ResetsFailedLoginAttempts_OnSuccess()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var user = new User
+            {
+                Id = userId,
+                Email = "failures@example.com",
+                Username = "failures",
+                DisplayName = "Failures",
+                FailedLoginAttempts = 3,
+                LastFailedLoginAttempt = DateTime.UtcNow.AddHours(-2)
+            };
+
+            var refreshToken = "rt-for-reset";
+            var expiry = DateTime.UtcNow.AddDays(1);
+            var ip = "8.8.8.8";
+
+            _mockUserRepository.Setup(x => x.GetByIdAsync(userId, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+
+            _mockHashingService.Setup(h => h.HashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new HashedValue("reset-hash", "reset-salt"));
+
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+            // Act
+            var before = DateTime.UtcNow;
+            await _sut.UpdateLoginInfoAsync(userId, ip, refreshToken, expiry, _ct);
+            var after = DateTime.UtcNow;
+
+            // Assert
+            user.FailedLoginAttempts.Should().Be(0);
+            user.LastLoginIp.Should().Be(ip);
+            user.LastLoginAt.Should().BeOnOrAfter(before).And.BeOnOrBefore(after);
+
+            _mockUnitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        }
     }
 }
