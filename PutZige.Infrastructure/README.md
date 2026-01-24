@@ -7,6 +7,7 @@ Infrastructure layer implementing data access, repository implementations, and e
 - [Principles](#principles)
 - [Structure](#structure)
 - [Database](#database)
+- [JWT support](#jwt-support)
 - [Migrations](#migrations)
 - [Configuration](#configuration)
 - [Service registration](#service-registration)
@@ -25,85 +26,66 @@ Infrastructure layer implementing data access, repository implementations, and e
 
 ```
 PutZige.Infrastructure/
-??? Data/
-?   ??? ApplicationDbContext.cs
-?   ??? Configurations/        # EF entity configurations
-?   ??? Migrations/            # EF migrations
-??? Repositories/              # Repository implementations
-??? Services/                  # External service implementations
-??? DependencyInjection.cs     # Service registration
+  Data/
+  Repositories/
+  Services/
+  Settings/
+  DependencyInjection.cs
 ```
-
-Exact paths:
-
-- `PutZige.Infrastructure/Data/ApplicationDbContext.cs`
-- `PutZige.Infrastructure/Data/Configurations/`
-- `PutZige.Infrastructure/Data/Migrations/`
-- `PutZige.Infrastructure/Repositories/`
-- `PutZige.Infrastructure/Services/`
-- `PutZige.Infrastructure/DependencyInjection.cs`
 
 ## Database
 
-- Provider: SQL Server (primary) — PostgreSQL may be supported in code but is not the default unless configured.
+- Provider: SQL Server by default
 - ORM: Entity Framework Core (EF Core)
+- `AppDbContext` exposes `DbSet<User>`, `DbSet<UserSession>` and other domain entities.
 
-Connection string used by runtime: read from `PutZige.API/appsettings.json` via `DefaultConnection` key.
+## JWT support
 
-### Migrations
-Add a migration (exact commands):
+This layer implements `IJwtTokenService` and depends on the `JwtSettings` type defined in the Application layer.
 
-```bash
-# from solution root
-dotnet ef migrations add <Name> --project PutZige.Infrastructure/PutZige.Infrastructure.csproj --startup-project PutZige.API/PutZige.API.csproj
+- `PutZige.Infrastructure/Services/JwtTokenService.cs` generates signed JWT access tokens and cryptographically-random refresh tokens.
+- The `JwtTokenService` is registered in DI by `DependencyInjection.AddInfrastructureServices` and expects `JwtSettings` to be configured in app configuration under the `JwtSettings` section.
+
+Configuration example (appsettings.json):
+```json
+"JwtSettings": {
+  "Secret": "your-256-bit-secret-key-minimum-32-characters-long",
+  "Issuer": "PutZige",
+  "Audience": "PutZige.Users",
+  "AccessTokenExpiryMinutes": 15,
+  "RefreshTokenExpiryDays": 7
+}
 ```
 
-Apply migrations:
+Security notes:
+- Use a secret store or environment variables to supply `JwtSettings:Secret` in production; do not commit secrets to source control.
 
+## Migrations
+
+Add migration and update database using EF CLI (example):
 ```bash
-dotnet ef database update --project PutZige.Infrastructure/PutZige.Infrastructure.csproj --startup-project PutZige.API/PutZige.API.csproj
+dotnet ef migrations add AddUserSession --project PutZige.Infrastructure --startup-project PutZige.API
+dotnet ef database update --project PutZige.Infrastructure --startup-project PutZige.API
 ```
-
-Migrations folder: `PutZige.Infrastructure/Data/Migrations/` (create if scaffolded).
 
 ## Service registration
 
 Call from `PutZige.API/Program.cs`:
-
 ```csharp
-services.AddInfrastructure(configuration);
+services.AddInfrastructureServices(configuration, environment);
 ```
 
-`AddInfrastructure` method is expected at `PutZige.Infrastructure/DependencyInjection.cs` and registers `ApplicationDbContext`, repositories, and external services.
-
-## Mapping guidance
-
-- The Infrastructure layer should work with domain entities and persistence models only. Mapping between domain entities and DTOs is the responsibility of the Application layer via AutoMapper profiles.
-- Do not expose EF Core tracked entities directly to the API layer. If projection is required at query time, prefer repository methods that return DTOs or use AutoMapper projections in the Application layer.
+This registers `AppDbContext`, repositories, and `JwtTokenService` along with `JwtSettings` configuration.
 
 ## Dependencies
-Check `PutZige.Infrastructure/PutZige.Infrastructure.csproj` for exact PackageReference entries. Common packages used here:
 
 - `Microsoft.EntityFrameworkCore`
 - `Microsoft.EntityFrameworkCore.SqlServer`
-- `Microsoft.EntityFrameworkCore.Design`
 
 ## Usage examples
 
-Resolve a repository from DI in application code:
-
-```csharp
-// in a service or handler
-var user = await _userRepository.GetByEmailAsync(email);
-```
-
-Add DbContext in `Program.cs` (example):
-
-```csharp
-services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
-```
+Request a token from the Auth controller and the `JwtTokenService` will sign tokens using configured settings.
 
 ## Related READMEs
-- Root README: `../README.md`
-- API README: `../PutZige.API/README.md`
+- `../PutZige.Application/README.md`
+- `../PutZige.API/README.md`

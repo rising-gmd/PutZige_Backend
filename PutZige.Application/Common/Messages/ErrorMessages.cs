@@ -13,6 +13,7 @@ namespace PutZige.Application.Common.Messages
             public const string EmailNotVerified = "Please verify your email before logging in.";
             public const string AccountLocked = "Your account has been locked. Please contact support.";
             public const string AccountInactive = "Your account is inactive. Please contact support.";
+            public const string InvalidRefreshToken = "Invalid or expired refresh token.";
         }
 
         public static class Validation

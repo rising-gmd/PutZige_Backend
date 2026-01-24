@@ -12,6 +12,10 @@ using PutZige.Infrastructure.Settings;
 using PutZige.Infrastructure.DependencyInjectionHelpers;
 using System;
 using System.Linq;
+using PutZige.Application.Interfaces;
+using PutZige.Infrastructure.Services;
+using PutZige.Application.Settings;
+using PutZige.Application.Validators;
 
 namespace PutZige.Infrastructure;
 
@@ -60,6 +64,19 @@ public static class DependencyInjection
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+        // JWT settings and token service
+        services.Configure<PutZige.Application.Settings.JwtSettings>(configuration.GetSection(PutZige.Application.Settings.JwtSettings.SectionName));
+        services.AddSingleton<IJwtTokenService, JwtTokenService>();
+
+        // Client info service (depends on IHttpContextAccessor which is provided by the host)
+        services.AddScoped<IClientInfoService, ClientInfoService>();
+
+        // Hashing settings and service
+        services.Configure<HashingSettings>(configuration.GetSection(HashingSettings.SectionName));
+        services.AddSingleton<IValidator<HashingSettings>, HashingSettingsValidator>();
+        services.AddSingleton<IValidateOptions<HashingSettings>, HashingSettingsOptionsValidator>();
+        services.AddScoped<IHashingService, HashingService>();
 
         return services;
     }

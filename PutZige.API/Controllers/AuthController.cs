@@ -14,24 +14,33 @@ namespace PutZige.API.Controllers
     [Route("api/v1/auth")]
     public sealed class AuthController : BaseApiController
     {
-        private readonly IUserService _userService;
+        private readonly IAuthService _authService;
         private readonly ILogger<AuthController> _logger;
 
-        public AuthController(IUserService userService, ILogger<AuthController> logger)
+        public AuthController(IAuthService authService, ILogger<AuthController> logger)
         {
-            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+            _authService = authService ?? throw new ArgumentNullException(nameof(authService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         /// <summary>
-        /// Registers a new user.
+        /// Logs in an existing user.
         /// </summary>
-        [HttpPost("register")]
-        public async Task<ActionResult<ApiResponse<RegisterUserResponse>>> Register([FromBody] RegisterUserRequest request, CancellationToken ct)
+        [HttpPost("login")]
+        public async Task<ActionResult<ApiResponse<LoginResponse>>> Login([FromBody] LoginRequest request, CancellationToken ct)
         {
-            var response = await _userService.RegisterUserAsync(request.Email, request.Username, request.DisplayName, request.Password, ct);
+            var response = await _authService.LoginAsync(request.Email, request.Password, ct);
+            return Ok(ApiResponse<LoginResponse>.Success(response, SuccessMessages.Authentication.LoginSuccessful));
+        }
 
-            return Created(response, SuccessMessages.Authentication.RegistrationSuccessful);
+        /// <summary>
+        /// Refreshes the authentication token.
+        /// </summary>
+        [HttpPost("refresh-token")]
+        public async Task<ActionResult<ApiResponse<RefreshTokenResponse>>> RefreshToken([FromBody] RefreshTokenRequest request, CancellationToken ct)
+        {
+            var response = await _authService.RefreshTokenAsync(request.RefreshToken, ct);
+            return Ok(ApiResponse<RefreshTokenResponse>.Success(response, SuccessMessages.Authentication.TokenRefreshed));
         }
     }
 }

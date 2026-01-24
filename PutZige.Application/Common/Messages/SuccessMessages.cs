@@ -12,6 +12,7 @@ namespace PutZige.Application.Common.Messages
             public const string EmailVerified = "Your email has been verified successfully.";
             public const string PasswordResetEmailSent = "Password reset instructions have been sent to your email.";
             public const string PasswordResetSuccessful = "Your password has been reset successfully.";
+            public const string TokenRefreshed = "Token refreshed successfully.";
         }
 
         public static class General

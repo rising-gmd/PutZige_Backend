@@ -10,6 +10,7 @@ namespace PutZige.Domain.Entities
         // Authentication
         public string Email { get; set; } = null!;
         public string PasswordHash { get; set; } = null!;
+        public string PasswordSalt { get; set; } = string.Empty;
         public bool IsEmailVerified { get; set; } = false;
         public string? EmailVerificationToken { get; set; }
         public DateTime? EmailVerificationTokenExpiry { get; set; }

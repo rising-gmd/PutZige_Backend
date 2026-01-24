@@ -6,7 +6,6 @@ using PutZige.Application.Interfaces;
 using PutZige.Application.DTOs.Auth;
 using PutZige.Domain.Entities;
 using PutZige.Domain.Interfaces;
-using BCrypt.Net;
 using System.Security.Cryptography;
 using PutZige.Application.Common.Constants;
 using PutZige.Application.Common.Messages;
@@ -24,17 +23,20 @@ namespace PutZige.Application.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<UserService>? _logger;
         private readonly IMapper _mapper;
+        private readonly IHashingService _hashingService;
 
-        public UserService(IUserRepository userRepository, IUnitOfWork unitOfWork, IMapper mapper, ILogger<UserService>? logger = null)
+        public UserService(IUserRepository userRepository, IUnitOfWork unitOfWork, IMapper mapper, IHashingService hashingService, ILogger<UserService>? logger = null)
         {
             ArgumentNullException.ThrowIfNull(userRepository);
             ArgumentNullException.ThrowIfNull(unitOfWork);
             ArgumentNullException.ThrowIfNull(mapper);
+            ArgumentNullException.ThrowIfNull(hashingService);
 
             _userRepository = userRepository;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _logger = logger;
+            _hashingService = hashingService;
         }
 
         /// <summary>
@@ -62,15 +64,18 @@ namespace PutZige.Application.Services
             }
 
             // Create a cryptographically secure verification token
-            var tokenBytes = RandomNumberGenerator.GetBytes(32);
-            var token = Convert.ToBase64String(tokenBytes).Replace("+", "-").Replace("/", "_").TrimEnd('=');
+            var token = _hashingService.GenerateSecureToken(32);
+
+            // Hash password
+            var hashed = await _hashingService.HashAsync(password, ct);
 
             var user = new User
             {
                 Email = email,
                 Username = username,
                 DisplayName = displayName,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password, AppConstants.Security.BcryptWorkFactor),
+                PasswordHash = hashed.Hash,
+                PasswordSalt = hashed.Salt,
                 EmailVerificationToken = token,
                 EmailVerificationTokenExpiry = DateTime.UtcNow.AddDays(AppConstants.Security.EmailVerificationTokenExpirationDays),
                 IsEmailVerified = false,
@@ -112,6 +117,47 @@ namespace PutZige.Application.Services
             var user = await _userRepository.GetByIdAsync(userId, ct);
             if (user == null) throw new KeyNotFoundException(ErrorMessages.General.ResourceNotFound);
             _userRepository.Delete(user);
+            await _unitOfWork.SaveChangesAsync(ct);
+        }
+
+        /// <summary>
+        /// Updates user's last login info and session details.
+        /// </summary>
+        public async Task UpdateLoginInfoAsync(Guid userId, string? ipAddress, string refreshToken, DateTime refreshTokenExpiry, CancellationToken ct = default)
+        {
+            var user = await _userRepository.GetByIdAsync(userId, ct);
+            if (user == null) throw new KeyNotFoundException(ErrorMessages.General.ResourceNotFound);
+
+            user.LastLoginAt = DateTime.UtcNow;
+            user.LastLoginIp = ipAddress;
+            user.FailedLoginAttempts = 0;
+
+            // Hash refresh token before storage
+            var hashed = await _hashingService.HashAsync(refreshToken, ct);
+
+            if (user.Session == null)
+            {
+                user.Session = new UserSession
+                {
+                    UserId = user.Id,
+                    RefreshTokenHash = hashed.Hash,
+                    RefreshTokenSalt = hashed.Salt,
+                    RefreshTokenExpiry = refreshTokenExpiry,
+                    IsOnline = true,
+                    LastActiveAt = DateTime.UtcNow
+                };
+                // Attach session via repository Add if available
+                // Using DbContext tracking since we fetched user with GetByIdAsync
+            }
+            else
+            {
+                user.Session.RefreshTokenHash = hashed.Hash;
+                user.Session.RefreshTokenSalt = hashed.Salt;
+                user.Session.RefreshTokenExpiry = refreshTokenExpiry;
+                user.Session.IsOnline = true;
+                user.Session.LastActiveAt = DateTime.UtcNow;
+            }
+
             await _unitOfWork.SaveChangesAsync(ct);
         }
     }
