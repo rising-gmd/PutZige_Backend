@@ -36,8 +36,10 @@ PutZige.API/
 
 ## Endpoints
 
+User management endpoints implemented:
+- `POST /api/v1/users` ? Creates a new user account (RESTful resource creation)
+
 Authentication endpoints implemented:
-- `POST /api/v1/auth/register` ? User registration
 - `POST /api/v1/auth/login` ? User login (returns access + refresh tokens)
 - `POST /api/v1/auth/refresh-token` ? Rotate refresh token and return new access token
 
