@@ -8,6 +8,7 @@ using PutZige.Application.DTOs.Auth;
 using PutZige.Application.DTOs.Common;
 using PutZige.Application.Interfaces;
 using PutZige.Application.Common.Messages;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace PutZige.API.Controllers
 {
@@ -27,6 +28,7 @@ namespace PutZige.API.Controllers
         /// Creates a new user account. (RESTful: POST to collection)
         /// </summary>
         [HttpPost]
+        [EnableRateLimiting("registration")]
         public async Task<ActionResult<ApiResponse<RegisterUserResponse>>> CreateUser([FromBody] RegisterUserRequest request, CancellationToken ct)
         {
             var response = await _userService.RegisterUserAsync(request.Email, request.Username, request.DisplayName, request.Password, ct);

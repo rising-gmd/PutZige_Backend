@@ -47,5 +47,23 @@ namespace PutZige.Application.Common.Messages
             public const string ResourceNotFound = "The requested resource was not found.";
             public const string UnauthorizedAccess = "You are not authorized to perform this action.";
         }
+
+        public static class RateLimit
+        {
+            /// <summary>
+            /// User-facing message returned when a request is rejected due to rate limiting.
+            /// </summary>
+            public const string Exceeded = "Rate limit exceeded. Please try again later.";
+
+            /// <summary>
+            /// Message indicating rate limiting has been disabled by configuration or validation failure.
+            /// </summary>
+            public const string Disabled = "Rate limiting is disabled.";
+
+            /// <summary>
+            /// Message indicating configuration validation failure for rate limiting.
+            /// </summary>
+            public const string ValidationFailed = "Rate limit configuration invalid; rate limiting disabled.";
+        }
     }
 }

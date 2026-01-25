@@ -8,6 +8,7 @@ using PutZige.Application.DTOs.Auth;
 using PutZige.Application.DTOs.Common;
 using PutZige.Application.Interfaces;
 using PutZige.Application.Common.Messages;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace PutZige.API.Controllers
 {
@@ -27,6 +28,7 @@ namespace PutZige.API.Controllers
         /// Logs in an existing user.
         /// </summary>
         [HttpPost("login")]
+        [EnableRateLimiting("login")]
         public async Task<ActionResult<ApiResponse<LoginResponse>>> Login([FromBody] LoginRequest request, CancellationToken ct)
         {
             var response = await _authService.LoginAsync(request.Email, request.Password, ct);
@@ -37,6 +39,7 @@ namespace PutZige.API.Controllers
         /// Refreshes the authentication token.
         /// </summary>
         [HttpPost("refresh-token")]
+        [EnableRateLimiting("refresh-token")]
         public async Task<ActionResult<ApiResponse<RefreshTokenResponse>>> RefreshToken([FromBody] RefreshTokenRequest request, CancellationToken ct)
         {
             var response = await _authService.RefreshTokenAsync(request.RefreshToken, ct);

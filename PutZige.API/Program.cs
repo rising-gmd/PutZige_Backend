@@ -10,6 +10,7 @@ using PutZige.Application;
 using PutZige.Infrastructure;
 using PutZige.Application.Settings;
 using Serilog;
+using PutZige.API.Extensions;
 
 // Bootstrap logger for startup errors
 Log.Logger = new LoggerConfiguration()
@@ -57,6 +58,10 @@ try
     // Register layer services
     builder.Services.AddApplicationServices();
     builder.Services.AddInfrastructureServices(builder.Configuration, builder.Environment);
+
+    // Register rate limiting configuration (per requirements)
+    // Place after AddControllers and before Build
+    builder.Services.AddRateLimitingConfiguration(builder.Configuration);
 
     // JWT Authentication
     var jwtSection = builder.Configuration.GetSection(JwtSettings.SectionName);
@@ -110,7 +115,11 @@ try
 
     app.UseRouting();
     app.UseHttpsRedirection();
-    app.UseAuthentication();
+    app.UseAuthentication();  // MUST be before rate limiting
+
+    // Middleware pipeline: rate limiting middleware should be added here (AFTER UseAuthentication and BEFORE UseAuthorization)
+    app.UseRateLimitingMiddleware();
+
     app.UseAuthorization();
     app.MapControllers();
 
