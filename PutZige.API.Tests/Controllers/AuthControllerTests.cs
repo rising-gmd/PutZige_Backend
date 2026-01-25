@@ -38,6 +38,9 @@ namespace PutZige.API.Tests.Controllers
             return CryptographicOperations.FixedTimeEquals(a, b);
         }
 
+        /// <summary>
+        /// Verifies login with valid credentials returns 200 and tokens.
+        /// </summary>
         [Fact]
         public async Task Login_ValidCredentials_Returns200AndLoginResponse()
         {
@@ -74,6 +77,9 @@ namespace PutZige.API.Tests.Controllers
             payload.Data.Email.Should().Be(email);
         }
 
+        /// <summary>
+        /// Ensures invalid password returns 400 and error message.
+        /// </summary>
         [Fact]
         public async Task Login_InvalidPassword_Returns400InvalidCredentials()
         {
@@ -98,6 +104,9 @@ namespace PutZige.API.Tests.Controllers
             payload.Message.Should().Contain("Invalid");
         }
 
+        /// <summary>
+        /// Validates missing fields return 400 with lowercase field names.
+        /// </summary>
         [Fact]
         public async Task Login_MissingRequiredFields_Returns400WithLowercaseFieldNames()
         {
@@ -111,6 +120,9 @@ namespace PutZige.API.Tests.Controllers
             result.Errors.Should().ContainKey("password");
         }
 
+        /// <summary>
+        /// Unverified email returns 400 with verify message.
+        /// </summary>
         [Fact]
         public async Task Login_UnverifiedEmail_Returns400()
         {
@@ -133,6 +145,9 @@ namespace PutZige.API.Tests.Controllers
             payload!.Message.ToLowerInvariant().Should().Contain("verify");
         }
 
+        /// <summary>
+        /// Inactive account returns 400 with inactive message.
+        /// </summary>
         [Fact]
         public async Task Login_InactiveAccount_Returns400()
         {
@@ -155,6 +170,9 @@ namespace PutZige.API.Tests.Controllers
             payload!.Message.ToLowerInvariant().Should().Contain("inactive");
         }
 
+        /// <summary>
+        /// Valid refresh token rotates tokens and updates stored hash.
+        /// </summary>
         [Fact]
         public async Task RefreshToken_ValidRequest_Returns200AndRotatesToken()
         {
@@ -211,6 +229,9 @@ namespace PutZige.API.Tests.Controllers
             }
         }
 
+        /// <summary>
+        /// Invalid refresh token returns 400 error.
+        /// </summary>
         [Fact]
         public async Task RefreshToken_InvalidToken_Returns400()
         {
@@ -223,6 +244,9 @@ namespace PutZige.API.Tests.Controllers
             payload.Message.ToLowerInvariant().Should().Contain("refresh");
         }
 
+        /// <summary>
+        /// Repeated failed logins trigger rate limit and return 429.
+        /// </summary>
         [Fact]
         public async Task Login_RateLimitExceeded_Returns429WithCorrectStatusCode()
         {
@@ -246,6 +270,9 @@ namespace PutZige.API.Tests.Controllers
             final.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
         }
 
+        /// <summary>
+        /// Rate limit response contains structured error message.
+        /// </summary>
         [Fact]
         public async Task Login_RateLimitExceeded_ResponseMatchesSchema()
         {
@@ -272,6 +299,9 @@ namespace PutZige.API.Tests.Controllers
             payload.Message.Should().NotBeNullOrWhiteSpace();
         }
 
+        /// <summary>
+        /// Repeated refresh attempts may trigger rate limiting or bad request.
+        /// </summary>
         [Fact]
         public async Task RefreshToken_RateLimitExceeded_Returns429()
         {

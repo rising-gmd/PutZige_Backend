@@ -37,6 +37,9 @@ namespace PutZige.API.Tests.Controllers
             return CryptographicOperations.FixedTimeEquals(a, b);
         }
 
+        /// <summary>
+        /// Creates user via API and expects 201 Created.
+        /// </summary>
         [Fact]
         public async Task CreateUser_ValidRequest_Returns201Created()
         {
@@ -53,6 +56,9 @@ namespace PutZige.API.Tests.Controllers
             response.StatusCode.Should().Be(HttpStatusCode.Created);
         }
 
+        /// <summary>
+        /// Valid create returns RegisterUserResponse DTO.
+        /// </summary>
         [Fact]
         public async Task CreateUser_ValidRequest_ReturnsUserResponseDto()
         {
@@ -74,6 +80,9 @@ namespace PutZige.API.Tests.Controllers
             payload.Data.Username.Should().Be(request.Username);
         }
 
+        /// <summary>
+        /// Persists created user into database.
+        /// </summary>
         [Fact]
         public async Task CreateUser_ValidRequest_SavesUserToDatabase()
         {
@@ -97,6 +106,9 @@ namespace PutZige.API.Tests.Controllers
             user!.Email.Should().Be(email);
         }
 
+        /// <summary>
+        /// New user's password is stored hashed and salt present.
+        /// </summary>
         [Fact]
         public async Task CreateUser_ValidRequest_HashesPassword()
         {
@@ -123,6 +135,9 @@ namespace PutZige.API.Tests.Controllers
             VerifyHash(plain, user.PasswordHash, user.PasswordSalt).Should().BeTrue();
         }
 
+        /// <summary>
+        /// Duplicate email returns 400 BadRequest.
+        /// </summary>
         [Fact]
         public async Task CreateUser_DuplicateEmail_Returns400BadRequest()
         {
@@ -149,6 +164,9 @@ namespace PutZige.API.Tests.Controllers
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
 
+        /// <summary>
+        /// Missing fields return 400 and lowercase field names in errors.
+        /// </summary>
         [Fact]
         public async Task CreateUser_MissingRequiredFields_Returns400WithLowercaseFieldNames()
         {
@@ -164,6 +182,9 @@ namespace PutZige.API.Tests.Controllers
             result.Errors.Should().ContainKey("password");
         }
 
+        /// <summary>
+        /// Invalid email format yields 400 with email error key.
+        /// </summary>
         [Fact]
         public async Task CreateUser_InvalidEmailFormat_Returns400WithLowercaseFieldName()
         {
@@ -183,6 +204,9 @@ namespace PutZige.API.Tests.Controllers
             result!.Errors.Should().ContainKey("email");
         }
 
+        /// <summary>
+        /// Repeated registrations from same IP may trigger rate limit and return 429.
+        /// </summary>
         [Fact]
         public async Task CreateUser_RateLimitExceeded_Returns429()
         {
@@ -214,6 +238,9 @@ namespace PutZige.API.Tests.Controllers
             res.StatusCode.Should().BeOneOf(HttpStatusCode.Created, HttpStatusCode.TooManyRequests);
         }
 
+        /// <summary>
+        /// Disposable email spam is limited by registration rules.
+        /// </summary>
         [Fact]
         public async Task Registration_SpamWithDisposableEmails_LimitEnforced()
         {
