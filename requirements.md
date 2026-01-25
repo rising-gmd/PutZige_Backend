@@ -1,421 +1,349 @@
-﻿# AI Prompt: Implement User Login with JWT (Principal Engineer Standard)
-
-You are a Principal Engineer at Microsoft. Implement a complete, production-ready JWT-based login feature for a chat application following existing patterns, best practices, and including comprehensive tests.
-
----
-
-## Mission
-
-Implement **POST /api/v1/auth/login** endpoint with:
-- JWT access token (15 min expiry)
-- Refresh token (7 days expiry, stored in DB)
-- Account lockout after failed attempts
-- Comprehensive logging
-- Full test coverage
-- Documentation updates
-
----
-
-## Step 1: Analyze Existing Patterns
-
-**Before writing ANY code, study these files:**
-
-### Registration Pattern (Your Template):
-- ✅ `PutZige.API/Controllers/AuthController.cs` - Controller pattern
-- ✅ `PutZige.Application/Services/UserService.cs` - Service pattern
-- ✅ `PutZige.Application/DTOs/Auth/RegisterUserRequest.cs` - Request DTO
-- ✅ `PutZige.Application/DTOs/Auth/RegisterUserResponse.cs` - Response DTO
-- ✅ `PutZige.Application/Validators/RegisterUserRequestValidator.cs` - Validation pattern
-- ✅ `PutZige.Application/Mappings/` - AutoMapper profiles
-- ✅ `PutZige.Infrastructure/Repositories/UserRepository.cs` - Repository pattern
-- ✅ `PutZige.Application.Tests/Services/UserServiceTests.cs` - Testing pattern
-
-**Output:** List the patterns you'll follow (e.g., "Use FluentValidation for request validation", "Return ApiResponse<T>", etc.)
-
----
-
-## Step 2: Design the Login Feature
-
-### Authentication Flow:
-```
-1. User sends email + password
-2. Validate credentials (BCrypt.Verify)
-3. Check account status (IsActive, IsLocked, IsEmailVerified)
-4. Generate JWT access token (15 min)
-5. Generate refresh token (7 day, store in UserSession table)
-6. Update LastLoginAt, LastLoginIp, reset FailedLoginAttempts
-7. Return both tokens + user info
-```
-
-### Account Lockout Logic:
-```
-- Max 5 failed attempts
-- Lock account for 15 minutes
-- Reset counter on successful login
-- Use User.FailedLoginAttempts, User.IsLocked, User.LockedUntil
-```
-
-### Required Components:
-
-**Domain Layer (PutZige.Domain):**
-- No changes needed (User entity already has all fields)
-
-**Application Layer (PutZige.Application):**
-- `DTOs/Auth/LoginRequest.cs` - Email, Password
-- `DTOs/Auth/LoginResponse.cs` - AccessToken, RefreshToken, User info, ExpiresIn
-- `DTOs/Auth/RefreshTokenRequest.cs` - RefreshToken
-- `DTOs/Auth/RefreshTokenResponse.cs` - New AccessToken, RefreshToken
-- `Validators/LoginRequestValidator.cs` - Email/password validation
-- `Services/IAuthService.cs` - Interface for auth operations
-- `Services/AuthService.cs` - Login, GenerateTokens, RefreshToken logic
-- `Mappings/AuthMappingProfile.cs` - AutoMapper for User → LoginResponse
-- Update `Interfaces/IUserService.cs` - Add UpdateLoginInfo method
-
-**Infrastructure Layer (PutZige.Infrastructure):**
-- `Services/JwtTokenService.cs` - Generate/validate JWT tokens
-- `Settings/JwtSettings.cs` - JWT configuration (Secret, Issuer, Audience, ExpiryMinutes)
-- Update `Repositories/UserRepository.cs` - Add GetByEmailWithSessionAsync
-- Update `DependencyInjection.cs` - Register JwtTokenService, JwtSettings
-
-**API Layer (PutZige.API):**
-- Update `Controllers/AuthController.cs` - Add Login, RefreshToken endpoints
-- Update `appsettings.json` - Add JwtSettings section
-- Update `Program.cs` - Add JWT authentication middleware
-
-**Tests:**
-- `PutZige.Application.Tests/Services/AuthServiceTests.cs` - Unit tests
-- `PutZige.API.Tests/Controllers/AuthControllerTests.cs` - Integration tests
-
----
-
-## Step 3: Implementation Requirements
-
-### Follow These Patterns:
-
-**✅ Validation (Use FluentValidation):**
-```csharp
-// Pattern from RegisterUserRequestValidator
-RuleFor(x => x.Email)
-    .NotEmpty().WithMessage("Email is required")
-    .EmailAddress().WithMessage("Invalid email format")
-    .WithName("email");
-
-RuleFor(x => x.Password)
-    .NotEmpty().WithMessage("Password is required")
-    .WithName("password");
-```
-
-**✅ Service Layer (Follow UserService pattern):**
-```csharp
-// Constructor with null checks
-public AuthService(IUserRepository userRepo, IUnitOfWork unitOfWork, IJwtTokenService jwtService, IMapper mapper, ILogger<AuthService>? logger = null)
-{
-    ArgumentNullException.ThrowIfNull(userRepo);
-    // ... throw for each required dependency
-}
-
-// Method structure
-public async Task<LoginResponse> LoginAsync(string email, string password, string? ipAddress, CancellationToken ct = default)
-{
-    // 1. Validate inputs
-    if (string.IsNullOrWhiteSpace(email)) throw new ArgumentException(...);
-    
-    // 2. Log operation start
-    _logger?.LogInformation("Login attempt - Email: {Email}", email);
-    
-    // 3. Business logic
-    // 4. Log important steps (one-liners)
-    // 5. Return response
-}
-```
-
-**✅ Logging (Concise, one-liner format):**
-```csharp
-_logger?.LogInformation("Login attempt - Email: {Email}", email);
-_logger?.LogWarning("Login failed - Invalid credentials: {Email}", email);
-_logger?.LogWarning("Login failed - Account locked: {Email}", email);
-_logger?.LogInformation("Login successful - UserId: {UserId}", userId);
-```
-
-**✅ Error Messages (Use existing pattern):**
-```csharp
-// Add to PutZige.Application/Common/Messages/ErrorMessages.cs
-public static class Authentication
-{
-    public const string InvalidCredentials = "Invalid email or password";
-    public const string AccountLocked = "Account is locked. Try again later";
-    public const string AccountInactive = "Account is not active";
-    public const string EmailNotVerified = "Email is not verified";
-    public const string InvalidRefreshToken = "Invalid or expired refresh token";
-}
-```
-
-**✅ Controller (Follow existing pattern):**
-```csharp
-[HttpPost("login")]
-public async Task<ActionResult<ApiResponse<LoginResponse>>> Login([FromBody] LoginRequest request, CancellationToken ct)
-{
-    var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-    var response = await _authService.LoginAsync(request.Email, request.Password, ipAddress, ct);
-    return Ok(ApiResponse<LoginResponse>.Success(response, "Login successful"));
-}
-```
-
-**✅ JWT Configuration (appsettings.json):**
-```json
-"JwtSettings": {
-  "Secret": "your-256-bit-secret-key-minimum-32-characters-long",
-  "Issuer": "PutZige",
-  "Audience": "PutZige.Users",
-  "AccessTokenExpiryMinutes": 15,
-  "RefreshTokenExpiryDays": 7
-}
-```
-
-**✅ JWT Token Structure:**
-```csharp
-// Claims to include:
-- sub (userId)
-- email
-- username
-- jti (unique token ID)
-- iat (issued at)
-- exp (expiry)
-```
-
----
-
-## Step 4: Security Requirements
-
-**✅ Password Verification:**
-```csharp
-var isValidPassword = BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
-```
-
-**✅ Account Lockout Logic:**
-```csharp
-// Check if locked
-if (user.IsLocked && user.LockedUntil > DateTime.UtcNow)
-    throw new InvalidOperationException(ErrorMessages.Authentication.AccountLocked);
-
-// Increment failed attempts
-user.FailedLoginAttempts++;
-user.LastFailedLoginAttempt = DateTime.UtcNow;
-
-if (user.FailedLoginAttempts >= 5)
-{
-    user.IsLocked = true;
-    user.LockedUntil = DateTime.UtcNow.AddMinutes(15);
-}
-
-// Reset on success
-user.FailedLoginAttempts = 0;
-user.LastLoginAt = DateTime.UtcNow;
-user.LastLoginIp = ipAddress;
-```
-
-**✅ Refresh Token Storage:**
-```csharp
-// Store in UserSession table
-var session = new UserSession
-{
-    UserId = user.Id,
-    RefreshToken = GenerateCryptoRandomString(32),
-    RefreshTokenExpiry = DateTime.UtcNow.AddDays(7),
-    IpAddress = ipAddress,
-    UserAgent = userAgent,
-    IsActive = true
-};
-```
-
----
-
-## Step 5: Testing Requirements
-
-### Unit Tests (Application.Tests):
-
-**AuthServiceTests.cs:**
-```
-✅ LoginAsync_ValidCredentials_ReturnsLoginResponse
-✅ LoginAsync_ValidCredentials_GeneratesAccessToken
-✅ LoginAsync_ValidCredentials_GeneratesRefreshToken
-✅ LoginAsync_ValidCredentials_UpdatesLastLoginInfo
-✅ LoginAsync_ValidCredentials_ResetsFailedAttempts
-✅ LoginAsync_InvalidPassword_ThrowsInvalidOperationException
-✅ LoginAsync_InvalidPassword_IncrementsFailedAttempts
-✅ LoginAsync_FifthFailedAttempt_LocksAccount
-✅ LoginAsync_LockedAccount_ThrowsInvalidOperationException
-✅ LoginAsync_InactiveAccount_ThrowsInvalidOperationException
-✅ LoginAsync_UnverifiedEmail_ThrowsInvalidOperationException
-✅ LoginAsync_NonExistentEmail_ThrowsInvalidOperationException
-✅ RefreshTokenAsync_ValidToken_ReturnsNewAccessToken
-✅ RefreshTokenAsync_ExpiredToken_ThrowsInvalidOperationException
-✅ RefreshTokenAsync_InvalidToken_ThrowsInvalidOperationException
-```
-
-**LoginRequestValidatorTests.cs:**
-```
-✅ Validate_ValidData_PassesValidation
-✅ Validate_EmptyEmail_FailsValidation
-✅ Validate_InvalidEmailFormat_FailsValidation
-✅ Validate_EmptyPassword_FailsValidation
-```
-
-### Integration Tests (API.Tests):
-
-**AuthControllerTests.cs (add to existing file):**
-```
-✅ Login_ValidCredentials_Returns200OK
-✅ Login_ValidCredentials_ReturnsAccessAndRefreshToken
-✅ Login_ValidCredentials_UpdatesLastLoginInDatabase
-✅ Login_InvalidPassword_Returns400BadRequest
-✅ Login_FiveFailedAttempts_LocksAccount
-✅ Login_LockedAccount_Returns400BadRequest
-✅ Login_NonExistentEmail_Returns400BadRequest
-✅ Login_MissingFields_Returns400BadRequest
-✅ RefreshToken_ValidToken_Returns200OK
-✅ RefreshToken_ExpiredToken_Returns400BadRequest
-```
-
----
-
-## Step 6: Documentation Updates
-
-**Update these README files:**
-
-**✅ PutZige.Application/README.md:**
-- Add AuthService to services list
-- Add JWT token generation info
-- Add refresh token pattern
-
-**✅ PutZige.Infrastructure/README.md:**
-- Add JwtTokenService info
-- Add JwtSettings configuration
-
-**✅ PutZige.API/README.md:**
-- Add POST /api/v1/auth/login endpoint
-- Add POST /api/v1/auth/refresh-token endpoint
-- Add JWT authentication setup
-
----
-
-## Step 7: Build & Test Process
-
-### Execute in this order:
-
-**1. Build Solution:**
-```bash
-dotnet build
-# Fix any compilation errors before proceeding
-```
-
-**2. Run Unit Tests:**
-```bash
-dotnet test PutZige.Application.Tests --verbosity normal
-# All tests must pass (including new AuthService tests)
-```
-
-**3. Run Integration Tests:**
-```bash
-dotnet test PutZige.API.Tests --verbosity normal
-# All tests must pass (including new login endpoint tests)
-```
-
-**4. Run All Tests:**
-```bash
-dotnet test --verbosity normal
-# Final verification - everything passes
-```
-
-**5. Manual Testing:**
-```bash
-# Start API
-dotnet run --project PutZige.API
-
-# Test login with Postman/curl
-POST http://localhost:5000/api/v1/auth/login
-Body: { "email": "user@test.com", "password": "ValidPass123!" }
-
-# Expected response:
-{
-  "isSuccess": true,
-  "data": {
-    "accessToken": "eyJhbGc...",
-    "refreshToken": "abc123...",
-    "expiresIn": 900,
-    "user": { ... }
-  },
-  "message": "Login successful"
-}
-```
-
----
-
-## Step 8: Report Format
-
-After completing each phase, report:
-
-```markdown
-## Phase X Complete
-
-### Changes Made:
-1. ✅ Created LoginRequest.cs, LoginResponse.cs
-2. ✅ Implemented AuthService with login logic
-3. ✅ Added JWT token generation
-4. ✅ [list all files created/modified]
-
-### Build Status:
-✅ Solution builds successfully
-❌ Build failed: [error details]
-
-### Test Status:
-Unit Tests: ✅ 45 passed, 0 failed
-Integration Tests: ✅ 12 passed, 0 failed
-Total: ✅ 57 passed, 0 failed
-
-### Issues Found:
-1. [Issue description] - Fixed by [solution]
-2. [Issue description] - Fixed by [solution]
-
-### Next Phase:
-[What's next]
-```
-
----
-
-## Quality Checklist
-
-Before marking complete, verify:
-
-- [ ] Follows existing code patterns (validation, services, controllers)
-- [ ] Uses FluentValidation with .WithName("lowercase")
-- [ ] Returns ApiResponse<T> wrapper
-- [ ] Includes concise, one-liner logging
-- [ ] Error messages in ErrorMessages.cs
-- [ ] JWT tokens properly signed and validated
-- [ ] Refresh tokens stored in UserSession table
-- [ ] Account lockout logic works (5 attempts, 15 min lock)
-- [ ] Password verified with BCrypt
-- [ ] All tests pass (unit + integration)
-- [ ] README files updated
-- [ ] Solution builds without errors
-- [ ] Follows clean architecture (no layer violations)
-- [ ] All async methods use CancellationToken
-- [ ] Proper null checks and exception handling
-
----
-
-## Start Now
-
-**Begin with Phase 1:**
-1. Analyze existing patterns (list what you found)
-2. Create DTOs (LoginRequest, LoginResponse, etc.)
-3. Create validators
-4. Implement AuthService
-5. Add JWT token service
-6. Update AuthController
-7. Write tests
-8. Build & verify
-9. Update documentation
-
-**Report after each phase - don't skip ahead until current phase is complete and tested.**
+﻿You are a principal security tester at Microsoft with 15+ years of experience testing distributed systems, chat applications, and rate limiting implementations. Your job is to find vulnerabilities, edge cases, and breaking points that could be exploited by attackers or cause production incidents.
+System Under Test:
+
+PutZige Chat Application - Real-time messaging platform
+Rate Limiting Implementation: ASP.NET Core built-in rate limiting
+
+GlobalLimiter: Sliding Window (10,000/min per user in dev, 1,000/min in prod)
+Login: Fixed Window (1,000/min dev, 5/15min prod)
+Registration: Fixed Window (100/min dev, 3/hour prod)
+RefreshToken: Fixed Window (1,000/min dev, 10/15min prod)
+
+
+Partition Strategy: User ID (from JWT) for authenticated, IP for unauthenticated
+Architecture: Clean Architecture, .NET 10, distributed cache support (Redis optional)
+
+Attack Vectors to Test:
+1. Boundary Gaming & Time-based Exploits
+
+Window boundary exploitation (send requests at :59 and :00 seconds)
+Clock skew attacks (server time manipulation)
+Timezone exploitation
+Leap second edge cases
+Sliding window segment boundary attacks
+
+2. Identity Spoofing & Bypass
+
+IP spoofing via X-Forwarded-For header injection
+JWT token manipulation to change User ID
+Multiple tokens for same user (session hijacking)
+Null/empty User ID exploitation
+Special characters in User ID (SQL injection style)
+IPv6 vs IPv4 switching to reset limits
+VPN/proxy hopping to get new IPs
+
+3. Distributed Attack Patterns
+
+Distributed brute force (low rate from many IPs)
+Slowloris-style slow requests to exhaust connections
+Cache poisoning (Redis exploitation if enabled)
+Race conditions in counter updates
+Concurrent request floods (hit limit exactly at same millisecond)
+Multi-threaded boundary testing
+
+4. Resource Exhaustion
+
+Memory exhaustion via unique partition keys
+Redis connection pool exhaustion
+Sliding window segment overflow
+Partition key collision attacks
+Large payload attacks combined with rate limiting
+
+5. Configuration & State Manipulation
+
+Disabled rate limiting bypass testing
+Invalid configuration injection
+Runtime configuration changes
+Redis failover scenarios
+In-memory vs distributed cache inconsistencies
+
+6. Business Logic Exploitation
+
+Account enumeration via differential responses
+Timing attacks to distinguish valid/invalid users
+Registration spam with disposable emails
+Password reset flood attacks
+Refresh token rotation exploitation
+
+7. Edge Cases & Corner Cases
+
+Exactly at limit boundary (1000th request)
+Zero window duration
+Negative permit limits
+Overflow scenarios (int.MaxValue requests)
+Expired vs active window edge cases
+Multiple policies on same endpoint collision
+
+Test Organization by Layer:
+Layer 1: PutZige.Infrastructure.Tests/RateLimiting/ (NEW FOLDER)
+File: RateLimitPartitioningTests.cs (Critical - Partition Logic)
+
+GetPartitionKey_AuthenticatedUser_ReturnsUserId
+GetPartitionKey_UnauthenticatedUser_ReturnsIpAddress
+GetPartitionKey_XForwardedForHeader_UsesForwardedIp
+GetPartitionKey_MultipleXForwardedForIps_UsesMostTrustedIp
+GetPartitionKey_InvalidXForwardedFor_FallsBackToRemoteIp
+GetPartitionKey_NullUserIdAndNullIp_ReturnsUnknown
+GetPartitionKey_MaliciousXForwardedForInjection_Sanitized
+GetPartitionKey_IPv6Address_NormalizedCorrectly
+GetPartitionKey_IPv6WithPort_PortStripped
+GetPartitionKey_UserIdWithSpecialCharacters_Sanitized
+
+File: SlidingWindowLimiterTests.cs (Global API)
+11. SlidingWindow_WithinLimit_AllowsRequests
+12. SlidingWindow_ExceedsLimit_Returns429
+13. SlidingWindow_AtExactLimit_1000thRequestAllowed_1001stDenied
+14. SlidingWindow_WindowBoundary_NoGaming
+15. SlidingWindow_SegmentRollover_CountsCorrectly
+16. SlidingWindow_ConcurrentRequests_ThreadSafe
+17. SlidingWindow_MultipleUsers_IndependentCounters
+18. SlidingWindow_SameUserDifferentEndpoints_SharesCounter
+19. SlidingWindow_WindowExpiry_ResetsCounter
+20. SlidingWindow_PartialWindow_AllowsPartialRequests
+File: FixedWindowLimiterTests.cs (Auth Endpoints)
+21. FixedWindow_Login_5Attempts_6thDenied
+22. FixedWindow_Login_WindowReset_AllowsNew5Attempts
+23. FixedWindow_Login_BoundaryExploit_4At59Sec_2At00Sec_BlocksCorrectly
+24. FixedWindow_Registration_3Attempts_4thDenied
+25. FixedWindow_RefreshToken_10Attempts_11thDenied
+26. FixedWindow_DifferentPolicies_IndependentCounters
+27. FixedWindow_SameIpDifferentEndpoints_IndependentLimits
+File: RedisDistributedCacheTests.cs (Production Scenarios)
+28. Redis_Enabled_UsesDistributedCounter
+29. Redis_ConnectionFailure_FallsBackToInMemory
+30. Redis_KeyExpiry_ResetsCounterCorrectly
+31. Redis_MultipleServers_ShareCounters
+32. Redis_ConnectionPoolExhaustion_HandlesGracefully
+33. Redis_PartitionKeyCollision_IsolatedCorrectly
+34. Redis_NetworkLatency_DoesNotBlockRequests
+Layer 2: PutZige.Application.Tests/RateLimiting/ (NEW FOLDER)
+File: RateLimitSettingsValidatorTests.cs (Configuration Security)
+35. Validate_ValidSettings_Passes
+36. Validate_PermitLimitZero_Fails
+37. Validate_PermitLimitNegative_Fails
+38. Validate_PermitLimitOverflow_Fails
+39. Validate_WindowSecondsZero_Fails
+40. Validate_WindowSecondsNegative_Fails
+41. Validate_WindowSecondsTooLarge_Fails
+42. Validate_SegmentsPerWindowTooLow_Fails
+43. Validate_SegmentsPerWindowTooHigh_Fails
+44. Validate_AllPoliciesInvalid_ReturnsAllErrors
+Layer 3: PutZige.API.Tests/Integration/RateLimiting/ (NEW FOLDER)
+File: LoginRateLimitIntegrationTests.cs (Critical - Brute Force Protection)
+45. Login_5FailedAttempts_6thReturns429
+46. Login_5FailedAttempts_WaitForReset_AllowsNewAttempts
+47. Login_4Attempts_SuccessfulLogin_CounterDoesNotReset (security: counter persists)
+48. Login_RateLimitExceeded_RetryAfterHeaderPresent
+49. Login_RateLimitExceeded_ResponseContainsCorrectRetryTime
+50. Login_DifferentIPs_IndependentLimits
+51. Login_SameIP_DifferentUsers_SharesLimit (unauthenticated = IP-based)
+52. Login_XForwardedForSpoofing_UsesActualClientIP
+53. Login_ConcurrentRequests_ThreadSafeCounter
+54. Login_BoundaryAttack_SplitAcrossWindowBoundary_EnforcesLimit
+File: RegistrationRateLimitIntegrationTests.cs (Spam Prevention)
+55. Registration_3Accounts_4thReturns429
+56. Registration_SpamWithDisposableEmails_LimitEnforced
+57. Registration_DifferentIPs_IndependentLimits
+58. Registration_SameIPMultipleAttempts_SharesLimit
+59. Registration_RateLimitExceeded_ReturnsCorrectErrorMessage
+60. Registration_VPNHopping_DetectsAndBlocks (if X-Forwarded-For tracking enabled)
+File: RefreshTokenRateLimitIntegrationTests.cs (Token Rotation Attacks)
+61. RefreshToken_10Attempts_11thReturns429
+62. RefreshToken_SameUser_MultipleDevices_SharesLimit
+63. RefreshToken_ExpiredToken_StillCountsTowardLimit
+64. RefreshToken_RevokedToken_StillCountsTowardLimit
+65. RefreshToken_RateLimitExceeded_DoesNotRotateToken
+File: GlobalApiRateLimitIntegrationTests.cs (Chat Endpoints)
+66. GlobalApi_1000Requests_AllSucceed
+67. GlobalApi_1001Requests_LastReturns429
+68. GlobalApi_SlidingWindow_SmoothDistribution_NoHarshCutoff
+69. GlobalApi_BurstTraffic_50MessagesIn5Seconds_Allowed
+70. GlobalApi_SustainedAbuse_2000RequestsIn60Sec_BlockedAt1000
+71. GlobalApi_AuthenticatedUser_UsesUserId_NotIP
+72. GlobalApi_MultipleEndpoints_SharesGlobalCounter
+73. GlobalApi_SpecificPolicyOverride_DoesNotApplyGlobal
+File: RateLimitBypassTests.cs (Security - Negative Testing)
+74. Bypass_DisabledRateLimiting_AllowsUnlimitedRequests
+75. Bypass_InvalidJWT_FallsBackToIPLimiting
+76. Bypass_NoAuthHeader_UsesIPLimiting
+77. Bypass_AdminRole_DoesNotBypassLimit (unless explicitly coded)
+78. Bypass_SystemAccount_DoesNotBypassLimit
+File: RateLimitEdgeCasesTests.cs (Corner Cases)
+79. EdgeCase_ExactlyAtLimit_1000thRequestAllowed
+80. EdgeCase_ConcurrentRequestsAtLimit_OnlyCorrectNumberAllowed
+81. EdgeCase_WindowExpiry_DuringRequest_HandlesCorrectly
+82. EdgeCase_ServerTimeChange_DoesNotResetCounters
+83. EdgeCase_LeapSecond_DoesNotCauseError
+84. EdgeCase_NegativeWindowDuration_Rejected
+85. EdgeCase_ZeroPermitLimit_RejectsAllRequests
+86. EdgeCase_IntMaxValueRequests_HandlesOverflow
+File: RateLimitDistributedTests.cs (Multi-Server Scenarios)
+87. Distributed_MultipleServers_ShareCountersViaRedis
+88. Distributed_RedisDown_FallsBackToInMemory_LogsWarning
+89. Distributed_RedisPartition_HandlesGracefully
+90. Distributed_CacheMiss_DoesNotResetCounter
+91. Distributed_ClockSkewBetweenServers_HandlesCorrectly
+File: RateLimitPerformanceTests.cs (Load & Stress)
+92. Performance_1000ConcurrentUsers_MaintainsLimits
+93. Performance_SlidingWindow_MemoryUsage_AcceptableRange
+94. Performance_HighThroughput_10KRequestsPerSecond_NoBottleneck
+95. Performance_LongRunningTest_24Hours_NoMemoryLeak
+File: RateLimitSecurityTests.cs (Attack Simulation)
+96. Security_BruteForceLogin_BlockedAt5Attempts
+97. Security_DistributedBruteForce_MultipleIPs_DetectedAndBlocked
+98. Security_AccountEnumeration_ResponseTimingConsistent
+99. Security_HeaderInjection_XForwardedFor_Sanitized
+100. Security_SQLInjectionInUserId_Sanitized
+101. Security_XSSInPartitionKey_Sanitized
+102. Security_PasswordSpray_AcrossMultipleAccounts_Limited
+File: RateLimitMonitoringTests.cs (Observability)
+103. Monitoring_RateLimitHit_LogsStructuredWarning
+104. Monitoring_ConfigurationLoaded_LogsInfo
+105. Monitoring_RedisFailure_LogsError
+106. Monitoring_RateLimitExceeded_IncludesPartitionKey
+107. Monitoring_RateLimitExceeded_IncludesPolicyName
+Layer 4: PutZige.API.Tests/Controllers/ (Existing - UPDATE)
+File: AuthControllerTests.cs (UPDATE EXISTING)
+108. Login_RateLimitExceeded_Returns429WithCorrectStatusCode
+109. Login_RateLimitExceeded_ResponseMatchesSchema
+110. RefreshToken_RateLimitExceeded_Returns429
+File: UsersControllerTests.cs (UPDATE EXISTING)
+111. CreateUser_RateLimitExceeded_Returns429
+112. CreateUser_RegistrationSpam_BlockedAfter3Attempts
+Test Categories Priority:
+P0 (Critical - Must Have):
+
+Tests 45-54 (Login rate limiting - brute force protection)
+Tests 66-73 (Global API - chat functionality)
+Tests 96-102 (Security attack simulation)
+
+P1 (High - Security):
+
+Tests 1-10 (Partition key logic)
+Tests 11-20 (Sliding window correctness)
+Tests 21-27 (Fixed window correctness)
+Tests 55-60 (Registration spam)
+
+P2 (Medium - Reliability):
+
+Tests 28-34 (Redis distributed scenarios)
+Tests 74-78 (Bypass scenarios)
+Tests 79-86 (Edge cases)
+Tests 87-91 (Multi-server)
+
+P3 (Nice to Have - Performance & Monitoring):
+
+Tests 92-95 (Performance)
+Tests 103-107 (Monitoring)
+
+Testing Standards:
+Integration Tests (API.Tests):
+
+Use WebApplicationFactory<Program>
+Real HTTP requests via HttpClient
+Real rate limiting middleware (not mocked)
+Use in-memory database for test isolation
+Configure test-specific rate limits (lower thresholds for faster tests)
+Parallel test execution support (isolated partition keys)
+
+Unit Tests (Infrastructure.Tests, Application.Tests):
+
+Mock dependencies (IOptions, ILogger, Redis)
+Test single responsibility
+Fast execution (<100ms per test)
+Deterministic (no time-based flakiness)
+
+Security Tests:
+
+Test actual attack vectors
+Use realistic payloads
+Verify logging of suspicious activity
+Test defense in depth (multiple layers)
+
+Performance Tests:
+
+Measure memory under load
+Measure response time degradation
+Test concurrent access patterns
+Identify bottlenecks
+
+Code Quality:
+
+Naming: MethodName_Scenario_ExpectedBehavior
+Arrange-Act-Assert pattern
+Use xUnit, FluentAssertions, Moq
+XML comments on complex tests
+Parameterized tests with [Theory] where appropriate
+Test data builders for complex objects
+Async/await properly
+Dispose resources (WebApplicationFactory, HttpClient)
+
+Deliverables:
+For each test file, provide:
+
+Complete test class with all test methods
+Setup/teardown logic
+Helper methods for common operations (e.g., SendLoginRequests(count))
+Test data builders if needed
+Comments explaining attack vectors for security tests
+
+Output Format:
+## LAYER 1: INFRASTRUCTURE.TESTS
+
+### File: RateLimitPartitioningTests.cs
+[Complete test class with tests 1-10]
+
+### File: SlidingWindowLimiterTests.cs
+[Complete test class with tests 11-20]
+
+[Continue for all infrastructure tests...]
+
+## LAYER 2: APPLICATION.TESTS
+
+### File: RateLimitSettingsValidatorTests.cs
+[Complete test class with tests 35-44]
+
+## LAYER 3: API.TESTS (Integration)
+
+### File: LoginRateLimitIntegrationTests.cs
+[Complete test class with tests 45-54]
+
+[Continue for all integration tests...]
+
+## LAYER 4: API.TESTS (Controller Updates)
+
+### File: AuthControllerTests.cs (UPDATE)
+[Show new test methods to add: 108-110]
+
+### File: UsersControllerTests.cs (UPDATE)
+[Show new test methods to add: 111-112]
+
+## TEST EXECUTION GUIDE
+
+### How to run specific test categories:
+[Commands for P0, P1, P2, P3]
+
+### How to run security tests:
+[Commands and setup]
+
+### How to run performance tests:
+[Commands and environment setup]
+
+## KNOWN ATTACK VECTORS COVERED
+
+[Summary of security vulnerabilities tested]
+
+## ADDITIONAL SECURITY RECOMMENDATIONS
+
+[Any additional testing needed beyond this suite]
+Implement all 112 test cases as a principal security tester would. Think like an attacker trying to break the system. Be thorough, be paranoid, be comprehensive.
+
+Test Distribution Summary:
+
+Infrastructure.Tests: 34 tests (partition logic, limiters, Redis)
+Application.Tests: 10 tests (configuration validation)
+API.Tests/Integration: 63 tests (end-to-end scenarios, security, performance)
+API.Tests/Controllers: 5 tests (controller updates)
+
+Total: 112 comprehensive security-focused tests 🔒🚀
+This is production-grade, Microsoft-level testing. Ship it! ✅

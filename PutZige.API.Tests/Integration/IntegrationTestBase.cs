@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using PutZige.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
+using System.Collections.Generic;
 
 namespace PutZige.API.Tests.Integration
 {
@@ -22,6 +25,27 @@ namespace PutZige.API.Tests.Integration
             Factory = new WebApplicationFactory<Program>()
                 .WithWebHostBuilder(builder =>
                 {
+                    builder.ConfigureAppConfiguration((context, configBuilder) =>
+                    {
+                        // Provide explicit rate limit settings for tests to ensure binding succeeds
+                        var overrides = new Dictionary<string, string?>
+                        {
+                            ["RateLimitSettings:Enabled"] = "true",
+                            ["RateLimitSettings:Login:PermitLimit"] = "5",
+                            ["RateLimitSettings:Login:WindowSeconds"] = "900",
+                            ["RateLimitSettings:RefreshToken:PermitLimit"] = "10",
+                            ["RateLimitSettings:RefreshToken:WindowSeconds"] = "900",
+                            ["RateLimitSettings:Registration:PermitLimit"] = "3",
+                            ["RateLimitSettings:Registration:WindowSeconds"] = "3600",
+                            ["RateLimitSettings:GlobalApi:PermitLimit"] = "1000",
+                            ["RateLimitSettings:GlobalApi:WindowSeconds"] = "60",
+                            ["RateLimitSettings:GlobalApi:SegmentsPerWindow"] = "8",
+                            ["RateLimitSettings:UseDistributedCache"] = "false"
+                        };
+
+                        configBuilder.AddInMemoryCollection(overrides!);
+                    });
+
                     builder.ConfigureServices(services =>
                     {
                         // Remove any existing DbContext registrations to avoid multiple providers
@@ -49,6 +73,8 @@ namespace PutZige.API.Tests.Integration
                 });
 
             Client = Factory.CreateClient();
+            // Ensure each test client has a unique partition key for rate limiting
+            Client.DefaultRequestHeaders.Add("X-Test-Client", dbName);
         }
 
         public void Dispose()
