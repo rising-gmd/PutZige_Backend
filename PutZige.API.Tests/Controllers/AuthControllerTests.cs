@@ -62,7 +62,7 @@ namespace PutZige.API.Tests.Controllers
             }
 
             var request = new LoginRequest { Email = email, Password = password };
-            var response = await Client.PostAsJsonAsync("/api/v1/auth/login", request);
+            var response = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, request);
 
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             var payload = await response.Content.ReadFromJsonAsync<ApiResponse<LoginResponse>>();
@@ -89,7 +89,7 @@ namespace PutZige.API.Tests.Controllers
             }
 
             var request = new LoginRequest { Email = email, Password = "WrongPass!" };
-            var response = await Client.PostAsJsonAsync("/api/v1/auth/login", request);
+            var response = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, request);
 
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
             var payload = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
@@ -102,7 +102,7 @@ namespace PutZige.API.Tests.Controllers
         public async Task Login_MissingRequiredFields_Returns400WithLowercaseFieldNames()
         {
             var invalid = new { username = "noemail" };
-            var response = await Client.PostAsJsonAsync("/api/v1/auth/login", invalid);
+            var response = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, invalid);
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
             var result = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
             result.Should().NotBeNull();
@@ -126,7 +126,7 @@ namespace PutZige.API.Tests.Controllers
             }
 
             var request = new LoginRequest { Email = email, Password = password };
-            var response = await Client.PostAsJsonAsync("/api/v1/auth/login", request);
+            var response = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, request);
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
             var payload = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
             payload.Should().NotBeNull();
@@ -148,7 +148,7 @@ namespace PutZige.API.Tests.Controllers
             }
 
             var request = new LoginRequest { Email = email, Password = password };
-            var response = await Client.PostAsJsonAsync("/api/v1/auth/login", request);
+            var response = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, request);
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
             var payload = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
             payload.Should().NotBeNull();
@@ -190,7 +190,7 @@ namespace PutZige.API.Tests.Controllers
             }
 
             var request = new RefreshTokenRequest { RefreshToken = refresh };
-            var response = await Client.PostAsJsonAsync("/api/v1/auth/refresh-token", request);
+            var response = await Client.PostAsJsonAsync(TestApiEndpoints.AuthRefreshToken, request);
             response.StatusCode.Should().Be(HttpStatusCode.OK);
 
             var payload = await response.Content.ReadFromJsonAsync<ApiResponse<RefreshTokenResponse>>();
@@ -215,7 +215,7 @@ namespace PutZige.API.Tests.Controllers
         public async Task RefreshToken_InvalidToken_Returns400()
         {
             var request = new RefreshTokenRequest { RefreshToken = "this-does-not-exist" };
-            var response = await Client.PostAsJsonAsync("/api/v1/auth/refresh-token", request);
+            var response = await Client.PostAsJsonAsync(TestApiEndpoints.AuthRefreshToken, request);
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
             var payload = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
             payload.Should().NotBeNull();
@@ -239,10 +239,10 @@ namespace PutZige.API.Tests.Controllers
 
             for (int i = 0; i < 6; i++)
             {
-                var r = await Client.PostAsJsonAsync("/api/v1/auth/login", new LoginRequest { Email = email, Password = "Wrong" });
+                var r = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Email = email, Password = "Wrong" });
             }
 
-            var final = await Client.PostAsJsonAsync("/api/v1/auth/login", new LoginRequest { Email = email, Password = "Wrong" });
+            var final = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Email = email, Password = "Wrong" });
             final.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
         }
 
@@ -261,10 +261,10 @@ namespace PutZige.API.Tests.Controllers
 
             for (int i = 0; i < 6; i++)
             {
-                await Client.PostAsJsonAsync("/api/v1/auth/login", new LoginRequest { Email = email, Password = "Wrong" });
+                await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Email = email, Password = "Wrong" });
             }
 
-            var final = await Client.PostAsJsonAsync("/api/v1/auth/login", new LoginRequest { Email = email, Password = "Wrong" });
+            var final = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Email = email, Password = "Wrong" });
             final.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
             var payload = await final.Content.ReadFromJsonAsync<ApiResponse<object>>();
             payload.Should().NotBeNull();
@@ -306,10 +306,10 @@ namespace PutZige.API.Tests.Controllers
 
             for (int i = 0; i < 11; i++)
             {
-                var r = await Client.PostAsJsonAsync("/api/v1/auth/refresh-token", new RefreshTokenRequest { RefreshToken = refresh });
+                var r = await Client.PostAsJsonAsync(TestApiEndpoints.AuthRefreshToken, new RefreshTokenRequest { RefreshToken = refresh });
             }
 
-            var final = await Client.PostAsJsonAsync("/api/v1/auth/refresh-token", new RefreshTokenRequest { RefreshToken = refresh });
+            var final = await Client.PostAsJsonAsync(TestApiEndpoints.AuthRefreshToken, new RefreshTokenRequest { RefreshToken = refresh });
             final.StatusCode.Should().BeOneOf(HttpStatusCode.TooManyRequests, HttpStatusCode.BadRequest);
         }
     }

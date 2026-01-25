@@ -47,12 +47,12 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             for (int i = 0; i < 5; i++)
             {
                 var req = new LoginRequest { Email = email, Password = "WrongPass" };
-                var res = await Client.PostAsJsonAsync("/api/v1/auth/login", req);
+                var res = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, req);
                 res.StatusCode.Should().BeOneOf(HttpStatusCode.BadRequest, HttpStatusCode.TooManyRequests);
             }
 
             var sixth = new LoginRequest { Email = email, Password = "WrongPass" };
-            var sixthRes = await Client.PostAsJsonAsync("/api/v1/auth/login", sixth);
+            var sixthRes = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, sixth);
             sixthRes.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
             sixthRes.Headers.RetryAfter.Should().NotBeNull();
         }
@@ -67,7 +67,7 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             for (int i = 0; i < 5; i++)
             {
                 var req = new LoginRequest { Email = email, Password = "WrongPass" };
-                var res = await Client.PostAsJsonAsync("/api/v1/auth/login", req);
+                var res = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, req);
             }
 
             // Simulate waiting for window reset by directly manipulating DB or cache if available
@@ -75,7 +75,7 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             await Task.Delay(1200);
 
             var correctReq = new LoginRequest { Email = email, Password = correct };
-            var ok = await Client.PostAsJsonAsync("/api/v1/auth/login", correctReq);
+            var ok = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, correctReq);
             ok.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.TooManyRequests);
         }
 
@@ -89,17 +89,17 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             for (int i = 0; i < 4; i++)
             {
                 var req = new LoginRequest { Email = email, Password = "WrongPass" };
-                await Client.PostAsJsonAsync("/api/v1/auth/login", req);
+                await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, req);
             }
 
             // Successful login
             var successReq = new LoginRequest { Email = email, Password = correct };
-            var successRes = await Client.PostAsJsonAsync("/api/v1/auth/login", successReq);
+            var successRes = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, successReq);
             successRes.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.TooManyRequests);
 
             // Another failed attempt should still count towards limit
             var nextFail = new LoginRequest { Email = email, Password = "WrongPass" };
-            var nextRes = await Client.PostAsJsonAsync("/api/v1/auth/login", nextFail);
+            var nextRes = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, nextFail);
             // Depending on implementation, this may be BadRequest or TooManyRequests if counter was not reset
             nextRes.StatusCode.Should().BeOneOf(HttpStatusCode.BadRequest, HttpStatusCode.TooManyRequests);
         }
@@ -114,10 +114,10 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             for (int i = 0; i < 6; i++)
             {
                 var req = new LoginRequest { Email = email, Password = "WrongPass" };
-                await Client.PostAsJsonAsync("/api/v1/auth/login", req);
+                await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, req);
             }
 
-            var res = await Client.PostAsJsonAsync("/api/v1/auth/login", new LoginRequest { Email = email, Password = "WrongPass" });
+            var res = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Email = email, Password = "WrongPass" });
             res.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
             res.Headers.RetryAfter.Should().NotBeNull();
         }
@@ -132,10 +132,10 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             for (int i = 0; i < 6; i++)
             {
                 var req = new LoginRequest { Email = email, Password = "WrongPass" };
-                await Client.PostAsJsonAsync("/api/v1/auth/login", req);
+                await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, req);
             }
 
-            var res = await Client.PostAsJsonAsync("/api/v1/auth/login", new LoginRequest { Email = email, Password = "WrongPass" });
+            var res = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Email = email, Password = "WrongPass" });
             res.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
             // We expect Retry-After to be set to seconds or date; ensure header exists and parseable
             res.Headers.RetryAfter.Should().NotBeNull();
@@ -156,13 +156,13 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             // default client uses same IP; emulate second IP by creating a new factory/client with header
             for (int i = 0; i < 5; i++)
             {
-                await Client.PostAsJsonAsync("/api/v1/auth/login", req);
+                await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, req);
             }
 
             // Create a new client that sets X-Forwarded-For to different IP
             var client2 = Factory.CreateClient();
             client2.DefaultRequestHeaders.Add("X-Forwarded-For", "203.0.113.5");
-            var res = await client2.PostAsJsonAsync("/api/v1/auth/login", req);
+            var res = await client2.PostAsJsonAsync(TestApiEndpoints.AuthLogin, req);
             // should not be rate limited immediately
             res.StatusCode.Should().BeOneOf(HttpStatusCode.BadRequest, HttpStatusCode.OK, HttpStatusCode.TooManyRequests);
         }
@@ -179,11 +179,11 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             var req1 = new LoginRequest { Email = user1, Password = "WrongPass" };
             for (int i = 0; i < 5; i++)
             {
-                await Client.PostAsJsonAsync("/api/v1/auth/login", req1);
+                await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, req1);
             }
 
             var req2 = new LoginRequest { Email = user2, Password = "WrongPass" };
-            var res = await Client.PostAsJsonAsync("/api/v1/auth/login", req2);
+            var res = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, req2);
             // If unauthenticated rate limit is by IP, this should be rate limited
             res.StatusCode.Should().BeOneOf(HttpStatusCode.TooManyRequests, HttpStatusCode.BadRequest);
         }
@@ -203,10 +203,10 @@ namespace PutZige.API.Tests.Integration.RateLimiting
 
             for (int i = 0; i < 5; i++)
             {
-                await client2.PostAsJsonAsync("/api/v1/auth/login", req);
+                await client2.PostAsJsonAsync(TestApiEndpoints.AuthLogin, req);
             }
 
-            var res = await client2.PostAsJsonAsync("/api/v1/auth/login", req);
+            var res = await client2.PostAsJsonAsync(TestApiEndpoints.AuthLogin, req);
             // Depending on proxy trust configuration, server may or may not use XFF; accept either outcome but assert no crash
             res.StatusCode.Should().BeOneOf(HttpStatusCode.BadRequest, HttpStatusCode.TooManyRequests, HttpStatusCode.OK);
         }

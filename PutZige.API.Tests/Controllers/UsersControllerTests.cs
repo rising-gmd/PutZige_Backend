@@ -49,7 +49,7 @@ namespace PutZige.API.Tests.Controllers
                 ConfirmPassword = "Password123!"
             };
 
-            var response = await Client.PostAsJsonAsync("/api/v1/users", request);
+            var response = await Client.PostAsJsonAsync(TestApiEndpoints.Users, request);
             response.StatusCode.Should().Be(HttpStatusCode.Created);
         }
 
@@ -65,7 +65,7 @@ namespace PutZige.API.Tests.Controllers
                 ConfirmPassword = "Password123!"
             };
 
-            var response = await Client.PostAsJsonAsync("/api/v1/users", request);
+            var response = await Client.PostAsJsonAsync(TestApiEndpoints.Users, request);
             response.StatusCode.Should().Be(HttpStatusCode.Created);
             var payload = await response.Content.ReadFromJsonAsync<ApiResponse<RegisterUserResponse>>();
             payload.Should().NotBeNull();
@@ -87,7 +87,7 @@ namespace PutZige.API.Tests.Controllers
                 ConfirmPassword = "Password123!"
             };
 
-            var response = await Client.PostAsJsonAsync("/api/v1/users", request);
+            var response = await Client.PostAsJsonAsync(TestApiEndpoints.Users, request);
             response.StatusCode.Should().Be(HttpStatusCode.Created);
 
             using var scope = Factory.Services.CreateScope();
@@ -111,7 +111,7 @@ namespace PutZige.API.Tests.Controllers
                 ConfirmPassword = plain
             };
 
-            var response = await Client.PostAsJsonAsync("/api/v1/users", request);
+            var response = await Client.PostAsJsonAsync(TestApiEndpoints.Users, request);
             response.StatusCode.Should().Be(HttpStatusCode.Created);
 
             using var scope = Factory.Services.CreateScope();
@@ -145,7 +145,7 @@ namespace PutZige.API.Tests.Controllers
                 ConfirmPassword = "Password123!"
             };
 
-            var response = await Client.PostAsJsonAsync("/api/v1/users", request);
+            var response = await Client.PostAsJsonAsync(TestApiEndpoints.Users, request);
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
 
@@ -153,7 +153,7 @@ namespace PutZige.API.Tests.Controllers
         public async Task CreateUser_MissingRequiredFields_Returns400WithLowercaseFieldNames()
         {
             var invalidRequest = new { username = "test" };
-            var response = await Client.PostAsJsonAsync("/api/v1/users", invalidRequest);
+            var response = await Client.PostAsJsonAsync(TestApiEndpoints.Users, invalidRequest);
             var result = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
 
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -175,7 +175,7 @@ namespace PutZige.API.Tests.Controllers
                 password = "ValidPass123!"
             };
 
-            var response = await Client.PostAsJsonAsync("/api/v1/users", invalidRequest);
+            var response = await Client.PostAsJsonAsync(TestApiEndpoints.Users, invalidRequest);
             var result = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
 
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -198,7 +198,7 @@ namespace PutZige.API.Tests.Controllers
                     ConfirmPassword = "Password1!"
                 };
 
-                await Client.PostAsJsonAsync("/api/v1/users", req);
+                await Client.PostAsJsonAsync(TestApiEndpoints.Users, req);
             }
 
             var final = new RegisterUserRequest
@@ -210,7 +210,7 @@ namespace PutZige.API.Tests.Controllers
                 ConfirmPassword = "Password1!"
             };
 
-            var res = await Client.PostAsJsonAsync("/api/v1/users", final);
+            var res = await Client.PostAsJsonAsync(TestApiEndpoints.Users, final);
             res.StatusCode.Should().BeOneOf(HttpStatusCode.Created, HttpStatusCode.TooManyRequests);
         }
 
@@ -228,10 +228,10 @@ namespace PutZige.API.Tests.Controllers
                     ConfirmPassword = "Password1!"
                 };
 
-                var r = await Client.PostAsJsonAsync("/api/v1/users", req);
+                var r = await Client.PostAsJsonAsync(TestApiEndpoints.Users, req);
             }
 
-            var final = await Client.PostAsJsonAsync("/api/v1/users", new RegisterUserRequest
+            var final = await Client.PostAsJsonAsync(TestApiEndpoints.Users, new RegisterUserRequest
             {
                 Email = "disposable-final@disposablemail.test",
                 Username = "disp-final",

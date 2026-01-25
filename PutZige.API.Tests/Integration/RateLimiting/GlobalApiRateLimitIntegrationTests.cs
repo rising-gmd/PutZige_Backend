@@ -21,7 +21,7 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             var tasks = new List<Task<HttpResponseMessage>>();
             for (int i = 0; i < 50; i++)
             {
-                tasks.Add(Client.GetAsync("/api/v1/health"));
+                tasks.Add(Client.GetAsync(TestApiEndpoints.Health));
             }
 
             await Task.WhenAll(tasks);
@@ -35,7 +35,7 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             var tasks = new List<Task<HttpResponseMessage>>();
             for (int i = 0; i < 120; i++)
             {
-                tasks.Add(Client.GetAsync("/api/v1/health"));
+                tasks.Add(Client.GetAsync(TestApiEndpoints.Health));
             }
 
             await Task.WhenAll(tasks);
@@ -48,12 +48,12 @@ namespace PutZige.API.Tests.Integration.RateLimiting
         public async Task GlobalApi_SlidingWindow_SmoothDistribution_NoHarshCutoff()
         {
             // Send burst then spaced requests and ensure service still responds but may limit
-            for (int i = 0; i < 20; i++) await Client.GetAsync("/api/v1/health");
+            for (int i = 0; i < 20; i++) await Client.GetAsync(TestApiEndpoints.Health);
             await Task.Delay(200);
-            for (int i = 0; i < 20; i++) await Client.GetAsync("/api/v1/health");
+            for (int i = 0; i < 20; i++) await Client.GetAsync(TestApiEndpoints.Health);
             // Ensure no exception, and some requests succeeded
             await Task.Delay(50);
-            var res = await Client.GetAsync("/api/v1/health");
+            var res = await Client.GetAsync(TestApiEndpoints.Health);
             res.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.TooManyRequests);
         }
 
@@ -61,7 +61,7 @@ namespace PutZige.API.Tests.Integration.RateLimiting
         public async Task GlobalApi_BurstTraffic_50MessagesIn5Seconds_Allowed()
         {
             var tasks = new List<Task<HttpResponseMessage>>();
-            for (int i = 0; i < 50; i++) tasks.Add(Client.GetAsync("/api/v1/health"));
+            for (int i = 0; i < 50; i++) tasks.Add(Client.GetAsync(TestApiEndpoints.Health));
             await Task.WhenAll(tasks);
             tasks.Select(t => t.Result.StatusCode).Distinct().Should().Contain(HttpStatusCode.OK);
         }
@@ -74,7 +74,7 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             var tooMany = 0;
             for (int i = 0; i < 500; i++)
             {
-                var r = await Client.GetAsync("/api/v1/health");
+                var r = await Client.GetAsync(TestApiEndpoints.Health);
                 if (r.StatusCode == HttpStatusCode.OK) success++;
                 if (r.StatusCode == HttpStatusCode.TooManyRequests) tooMany++;
             }
@@ -87,15 +87,15 @@ namespace PutZige.API.Tests.Integration.RateLimiting
         public async Task GlobalApi_AuthenticatedUser_UsesUserId_NotIP()
         {
             // This test requires obtaining a token; if not available, ensure endpoint accessible
-            var r = await Client.GetAsync("/api/v1/health");
+            var r = await Client.GetAsync(TestApiEndpoints.Health);
             r.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.Unauthorized);
         }
 
         [Fact]
         public async Task GlobalApi_MultipleEndpoints_SharesGlobalCounter()
         {
-            var r1 = await Client.GetAsync("/api/v1/health");
-            var r2 = await Client.GetAsync("/api/v1/health");
+            var r1 = await Client.GetAsync(TestApiEndpoints.Health);
+            var r2 = await Client.GetAsync(TestApiEndpoints.Health);
             (r1.StatusCode == HttpStatusCode.OK || r2.StatusCode == HttpStatusCode.OK).Should().BeTrue();
         }
 
@@ -103,7 +103,7 @@ namespace PutZige.API.Tests.Integration.RateLimiting
         public async Task GlobalApi_SpecificPolicyOverride_DoesNotApplyGlobal()
         {
             // If endpoint has its own policy, calling it should not affect global counter; best effort assertion
-            var r = await Client.GetAsync("/api/v1/health");
+            var r = await Client.GetAsync(TestApiEndpoints.Health);
             r.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.TooManyRequests);
         }
     }
