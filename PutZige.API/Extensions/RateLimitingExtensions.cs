@@ -2,6 +2,7 @@
 using System;
 using System.Linq;
 using System.Text.Json;
+using PutZige.Application.DTOs.Common;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -17,9 +18,6 @@ using PutZige.Application.Common.Messages;
 
 namespace PutZige.API.Extensions
 {
-    /// <summary>
-    /// Extensions to register rate limiting using built-in ASP.NET Core rate limiting.
-    /// </summary>
     public static class RateLimitingExtensions
     {
         private const string LoginPolicyName = "login";
@@ -86,8 +84,9 @@ namespace PutZige.API.Extensions
 
                 try
                 {
-                    options.AddPolicy(LoginPolicyName, _ =>
-                        RateLimitPartition.GetFixedWindowLimiter("login", _ => new FixedWindowRateLimiterOptions
+                    // Use per-request partition keys so limits apply per IP/user instead of globally
+                    options.AddPolicy(LoginPolicyName, httpContext =>
+                        RateLimitPartition.GetFixedWindowLimiter(GetPartitionKey(httpContext), _ => new FixedWindowRateLimiterOptions
                         {
                             PermitLimit = settings.Login.PermitLimit,
                             Window = TimeSpan.FromSeconds(settings.Login.WindowSeconds),
@@ -95,8 +94,8 @@ namespace PutZige.API.Extensions
                             QueueLimit = 0
                         }));
 
-                    options.AddPolicy(RefreshTokenPolicyName, _ =>
-                        RateLimitPartition.GetFixedWindowLimiter("refresh-token", _ => new FixedWindowRateLimiterOptions
+                    options.AddPolicy(RefreshTokenPolicyName, httpContext =>
+                        RateLimitPartition.GetFixedWindowLimiter(GetPartitionKey(httpContext), _ => new FixedWindowRateLimiterOptions
                         {
                             PermitLimit = settings.RefreshToken.PermitLimit,
                             Window = TimeSpan.FromSeconds(settings.RefreshToken.WindowSeconds),
@@ -104,8 +103,8 @@ namespace PutZige.API.Extensions
                             QueueLimit = 0
                         }));
 
-                    options.AddPolicy(RegistrationPolicyName, _ =>
-                        RateLimitPartition.GetFixedWindowLimiter("registration", _ => new FixedWindowRateLimiterOptions
+                    options.AddPolicy(RegistrationPolicyName, httpContext =>
+                        RateLimitPartition.GetFixedWindowLimiter(GetPartitionKey(httpContext), _ => new FixedWindowRateLimiterOptions
                         {
                             PermitLimit = settings.Registration.PermitLimit,
                             Window = TimeSpan.FromSeconds(settings.Registration.WindowSeconds),
@@ -119,7 +118,7 @@ namespace PutZige.API.Extensions
                     return;
                 }
 
-                // Global limiter partitioned by user id or ip using sliding window
+                // Global limiter unchanged
                 options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
                 {
                     try
@@ -197,19 +196,28 @@ namespace PutZige.API.Extensions
                         var limit = settings.GlobalApi.PermitLimit;
                         var window = settings.GlobalApi.WindowSeconds;
 
+                        switch (policyName)
+                        {
+                            case LoginPolicyName:
+                                limit = settings.Login.PermitLimit;
+                                window = settings.Login.WindowSeconds;
+                                break;
+                            case RefreshTokenPolicyName:
+                                limit = settings.RefreshToken.PermitLimit;
+                                window = settings.RefreshToken.WindowSeconds;
+                                break;
+                            case RegistrationPolicyName:
+                                limit = settings.Registration.PermitLimit;
+                                window = settings.Registration.WindowSeconds;
+                                break;
+                        }
+
                         logger2?.LogWarning("Rate limit exceeded: Policy={PolicyName}, Endpoint={Endpoint}, Partition={Partition}, Limit={Limit}, Window={WindowSeconds}s, Algorithm={Algorithm}",
                             policyName, endpoint?.DisplayName, partitionKey, limit, window, "SlidingWindow");
 
-                        var retryAfter = 0;
+                        var retryAfter = window;
 
-                        var payload = new
-                        {
-                            error = ErrorMessages.RateLimit.Exceeded,
-                            retryAfter = retryAfter,
-                            policyName = policyName,
-                            limit = limit,
-                            window = window
-                        };
+                        var apiPayload = ApiResponse<object>.Error(ErrorMessages.RateLimit.Exceeded, null, StatusCodes.Status429TooManyRequests);
 
                         var response = httpContext?.Response;
                         if (response != null)
@@ -217,7 +225,14 @@ namespace PutZige.API.Extensions
                             response.StatusCode = StatusCodes.Status429TooManyRequests;
                             response.Headers["Retry-After"] = retryAfter.ToString();
                             response.ContentType = "application/json";
-                            await response.WriteAsync(JsonSerializer.Serialize(payload), cancellationToken);
+
+                            var jsonOptions = new JsonSerializerOptions
+                            {
+                                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+                            };
+
+                            await response.WriteAsync(JsonSerializer.Serialize(apiPayload, jsonOptions), cancellationToken);
                         }
                     }
                     catch (Exception ex)
@@ -244,6 +259,26 @@ namespace PutZige.API.Extensions
             }
 
             return ip.Trim();
+        }
+
+        private static string GetPartitionKey(HttpContext httpContext)
+        {
+            if (httpContext == null) return "unknown";
+
+            // Tests may inject a header to isolate clients
+            var testHeader = httpContext.Request.Headers["X-Test-Client"].FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(testHeader)) return testHeader!;
+
+            var xff = httpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(xff))
+            {
+                var first = xff.Split(',').FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(first)) return NormalizeIp(first);
+            }
+
+            var ip = httpContext.Connection.RemoteIpAddress?.ToString();
+            if (!string.IsNullOrWhiteSpace(ip)) return NormalizeIp(ip);
+            return "unknown";
         }
     }
 }

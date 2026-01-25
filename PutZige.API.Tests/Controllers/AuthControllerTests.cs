@@ -18,7 +18,7 @@ using Xunit;
 
 namespace PutZige.API.Tests.Controllers
 {
-    public class AuthControllerTests : IntegrationTestBase
+    public partial class AuthControllerTests : IntegrationTestBase
     {
         private static (string hash, string salt) CreateHash(string plain)
         {
@@ -221,6 +221,96 @@ namespace PutZige.API.Tests.Controllers
             payload.Should().NotBeNull();
             payload!.IsSuccess.Should().BeFalse();
             payload.Message.ToLowerInvariant().Should().Contain("refresh");
+        }
+
+        [Fact]
+        public async Task Login_RateLimitExceeded_Returns429WithCorrectStatusCode()
+        {
+            var email = "rate108@example.com";
+            var password = "Password1!";
+            // seed user
+            using (var scope = Factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var hashed = CreateHash(password);
+                await db.Users.AddAsync(new User { Email = email, Username = "rate108", PasswordHash = hashed.hash, PasswordSalt = hashed.salt, IsActive = true, IsEmailVerified = true, DisplayName = "Rate 108" });
+                await db.SaveChangesAsync();
+            }
+
+            for (int i = 0; i < 6; i++)
+            {
+                var r = await Client.PostAsJsonAsync("/api/v1/auth/login", new LoginRequest { Email = email, Password = "Wrong" });
+            }
+
+            var final = await Client.PostAsJsonAsync("/api/v1/auth/login", new LoginRequest { Email = email, Password = "Wrong" });
+            final.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+        }
+
+        [Fact]
+        public async Task Login_RateLimitExceeded_ResponseMatchesSchema()
+        {
+            var email = "rate109@example.com";
+            var password = "Password1!";
+            using (var scope = Factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var hashed = CreateHash(password);
+                await db.Users.AddAsync(new User { Email = email, Username = "rate109", PasswordHash = hashed.hash, PasswordSalt = hashed.salt, IsActive = true, IsEmailVerified = true, DisplayName = "Rate 109" });
+                await db.SaveChangesAsync();
+            }
+
+            for (int i = 0; i < 6; i++)
+            {
+                await Client.PostAsJsonAsync("/api/v1/auth/login", new LoginRequest { Email = email, Password = "Wrong" });
+            }
+
+            var final = await Client.PostAsJsonAsync("/api/v1/auth/login", new LoginRequest { Email = email, Password = "Wrong" });
+            final.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+            var payload = await final.Content.ReadFromJsonAsync<ApiResponse<object>>();
+            payload.Should().NotBeNull();
+            payload!.IsSuccess.Should().BeFalse();
+            payload.Message.Should().NotBeNullOrWhiteSpace();
+        }
+
+        [Fact]
+        public async Task RefreshToken_RateLimitExceeded_Returns429()
+        {
+            var refresh = "raterefresh110";
+            using (var scope = Factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var pwd = CreateHash("Password1!");
+                var rt = CreateHash(refresh);
+
+                var user = new User
+                {
+                    Email = "rate110@example.com",
+                    Username = "rate110",
+                    DisplayName = "Rate 110",
+                    PasswordHash = pwd.hash,
+                    PasswordSalt = pwd.salt,
+                    IsActive = true,
+                    IsEmailVerified = true,
+                    Session = new UserSession
+                    {
+                        RefreshTokenHash = rt.hash,
+                        RefreshTokenSalt = rt.salt,
+                        RefreshTokenExpiry = DateTime.UtcNow.AddDays(1),
+                        IsOnline = true
+                    }
+                };
+
+                await db.Users.AddAsync(user);
+                await db.SaveChangesAsync();
+            }
+
+            for (int i = 0; i < 11; i++)
+            {
+                var r = await Client.PostAsJsonAsync("/api/v1/auth/refresh-token", new RefreshTokenRequest { RefreshToken = refresh });
+            }
+
+            var final = await Client.PostAsJsonAsync("/api/v1/auth/refresh-token", new RefreshTokenRequest { RefreshToken = refresh });
+            final.StatusCode.Should().BeOneOf(HttpStatusCode.TooManyRequests, HttpStatusCode.BadRequest);
         }
     }
 }

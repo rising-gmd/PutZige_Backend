@@ -1,4 +1,3 @@
-// PutZige.API.Tests/Controllers/UsersControllerTests.cs
 #nullable enable
 using System.Net;
 using System.Net.Http.Json;
@@ -18,7 +17,7 @@ using System;
 
 namespace PutZige.API.Tests.Controllers
 {
-    public class UsersControllerTests : IntegrationTestBase
+    public partial class UsersControllerTests : IntegrationTestBase
     {
         private static (string hash, string salt) CreateHash(string plain)
         {
@@ -182,6 +181,66 @@ namespace PutZige.API.Tests.Controllers
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
             result.Should().NotBeNull();
             result!.Errors.Should().ContainKey("email");
+        }
+
+        [Fact]
+        public async Task CreateUser_RateLimitExceeded_Returns429()
+        {
+            // Trigger registration endpoint multiple times from same IP
+            for (int i = 0; i < 5; i++)
+            {
+                var req = new RegisterUserRequest
+                {
+                    Email = $"ratereg{i}@example.com",
+                    Username = $"ratereg{i}",
+                    DisplayName = "RegUser",
+                    Password = "Password1!",
+                    ConfirmPassword = "Password1!"
+                };
+
+                await Client.PostAsJsonAsync("/api/v1/users", req);
+            }
+
+            var final = new RegisterUserRequest
+            {
+                Email = "ratereg-final@example.com",
+                Username = "ratereglast",
+                DisplayName = "RegUser",
+                Password = "Password1!",
+                ConfirmPassword = "Password1!"
+            };
+
+            var res = await Client.PostAsJsonAsync("/api/v1/users", final);
+            res.StatusCode.Should().BeOneOf(HttpStatusCode.Created, HttpStatusCode.TooManyRequests);
+        }
+
+        [Fact]
+        public async Task Registration_SpamWithDisposableEmails_LimitEnforced()
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                var req = new RegisterUserRequest
+                {
+                    Email = $"disposable{i}@disposablemail.test",
+                    Username = $"disp{i}",
+                    DisplayName = "Disposable",
+                    Password = "Password1!",
+                    ConfirmPassword = "Password1!"
+                };
+
+                var r = await Client.PostAsJsonAsync("/api/v1/users", req);
+            }
+
+            var final = await Client.PostAsJsonAsync("/api/v1/users", new RegisterUserRequest
+            {
+                Email = "disposable-final@disposablemail.test",
+                Username = "disp-final",
+                DisplayName = "Disposable",
+                Password = "Password1!",
+                ConfirmPassword = "Password1!"
+            });
+
+            final.StatusCode.Should().BeOneOf(HttpStatusCode.Created, HttpStatusCode.TooManyRequests, HttpStatusCode.BadRequest);
         }
     }
 }

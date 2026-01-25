@@ -1,469 +1,349 @@
-﻿You are a principal engineer implementing ASP.NET Core built-in rate limiting for the PutZige chat application following clean architecture principles and existing project conventions.
-Solution Context:
-
-Application Type: Real-time chat application (bursty traffic patterns)
-Architecture: Clean Architecture (Domain → Infrastructure → Application → API)
-Framework: .NET 10 (built-in rate limiting available via Microsoft.AspNetCore.RateLimiting)
-Configuration: IOptions pattern with FluentValidation (follow existing patterns)
-Environment files: appsettings.json, appsettings.Development.json, appsettings.Staging.json, appsettings.Production.json
-Existing patterns:
-
-Settings classes in Application/Settings/ or Infrastructure/Settings/
-Validators in Application/Validators/
-Extensions in API/Extensions/
-Clean separation of concerns - DO NOT bloat Program.cs
-
-
-
-Controllers to Protect:
-AuthController.cs (api/v1/auth):
-
-POST /login - Strict: 5 attempts per 15 min (Fixed Window)
-POST /refresh-token - Moderate: 10 attempts per 15 min (Fixed Window)
-
-UsersController.cs (api/v1/users):
-
-POST /users (registration) - Strict: 3 registrations per hour (Fixed Window)
-
-All Other Endpoints (chat, messages, presence, etc.):
-
-Global: 1000 requests per minute per user (Sliding Window)
-Applied via options.GlobalLimiter - secure by default
-
-Rate Limiting Strategy:
-Sliding Window for Global API (chat endpoints):
-
-Chat has bursty traffic (user sends multiple messages quickly)
-Sliding window = smoother UX, no boundary gaming
-Worth 2x memory overhead for better experience
-
-Fixed Window for Authentication (login/register):
-
-Simple, sufficient for auth protection
-Lower overhead, auth traffic not bursty
-
-GlobalLimiter (Option C):
-
-All endpoints protected by default (Sliding Window 1000/min)
-Specific endpoints override with explicit [EnableRateLimiting] attributes
-Secure by default - new endpoints automatically protected
-No manual attribute management on every endpoint
-
-Requirements:
-1. Rate Limiting Configuration (IOptions + FluentValidation)
-Create RateLimitSettings.cs (follow project's Settings folder location):
-csharppublic class RateLimitSettings
-{
-    public const string SectionName = "RateLimitSettings";
-    
-    // Feature toggle
-    public bool Enabled { get; set; } = true;
-    
-    // Policy configurations
-    public SlidingWindowPolicySettings GlobalApi { get; set; } = new();
-    public FixedWindowPolicySettings Login { get; set; } = new();
-    public FixedWindowPolicySettings RefreshToken { get; set; } = new();
-    public FixedWindowPolicySettings Registration { get; set; } = new();
-    
-    // Optional: Distributed cache for multi-server
-    public bool UseDistributedCache { get; set; } = false;
-    public string? RedisConnectionString { get; set; }
-}
-
-public class FixedWindowPolicySettings
-{
-    public int PermitLimit { get; set; }
-    public int WindowSeconds { get; set; }
-}
-
-public class SlidingWindowPolicySettings
-{
-    public int PermitLimit { get; set; }
-    public int WindowSeconds { get; set; }
-    public int SegmentsPerWindow { get; set; } = 8;
-}
-Create RateLimitSettingsValidator.cs (Application/Validators/):
-
-Validate PermitLimit > 0 and <= 10000
-Validate WindowSeconds > 0 and <= 86400 (24 hours)
-Validate SegmentsPerWindow >= 2 and <= 100 (for sliding window)
-Validate Enabled is boolean
-Validate nested PolicySettings objects (both Fixed and Sliding)
-
-Update appsettings files:
-appsettings.json (production defaults):
-json{
-  "RateLimitSettings": {
-    "Enabled": true,
-    "GlobalApi": {
-      "PermitLimit": 1000,
-      "WindowSeconds": 60,
-      "SegmentsPerWindow": 8
-    },
-    "Login": {
-      "PermitLimit": 5,
-      "WindowSeconds": 900
-    },
-    "RefreshToken": {
-      "PermitLimit": 10,
-      "WindowSeconds": 900
-    },
-    "Registration": {
-      "PermitLimit": 3,
-      "WindowSeconds": 3600
-    },
-    "UseDistributedCache": false,
-    "RedisConnectionString": null
-  }
-}
-appsettings.Development.json (relaxed for dev):
-json{
-  "RateLimitSettings": {
-    "Enabled": true,
-    "GlobalApi": { "PermitLimit": 10000, "WindowSeconds": 60, "SegmentsPerWindow": 8 },
-    "Login": { "PermitLimit": 1000, "WindowSeconds": 60 },
-    "RefreshToken": { "PermitLimit": 1000, "WindowSeconds": 60 },
-    "Registration": { "PermitLimit": 100, "WindowSeconds": 60 }
-  }
-}
-appsettings.Staging.json (moderate):
-json{
-  "RateLimitSettings": {
-    "Enabled": true,
-    "GlobalApi": { "PermitLimit": 2000, "WindowSeconds": 60, "SegmentsPerWindow": 8 },
-    "Login": { "PermitLimit": 10, "WindowSeconds": 900 },
-    "RefreshToken": { "PermitLimit": 20, "WindowSeconds": 900 },
-    "Registration": { "PermitLimit": 5, "WindowSeconds": 3600 }
-  }
-}
-appsettings.Production.json (use defaults from appsettings.json or override if needed)
-2. Rate Limiting Service Registration (Clean Architecture)
-Create RateLimitingExtensions.cs in PutZige.API/Extensions/:
-
-Create extension method: AddRateLimitingConfiguration(this IServiceCollection services, IConfiguration configuration)
-Register and validate RateLimitSettings with IOptions pattern using FluentValidation
-Configure AddRateLimiter() with:
-
-Named Policies (for specific endpoints):
-
-"login" - Fixed window (5 requests per 15 min)
-"refresh-token" - Fixed window (10 requests per 15 min)
-"registration" - Fixed window (3 requests per hour)
-
-GlobalLimiter (for all other endpoints):
-
-Use options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(...)
-Apply Sliding window limiter (1000 requests per minute)
-Smart bypass: If endpoint already has [EnableRateLimiting] attribute, skip global limiter
-Check for existing rate limit metadata: endpoint?.Metadata.GetMetadata<EnableRateLimitingAttribute>()
-If specific policy exists, return RateLimitPartition.GetNoLimiter("bypass")
-
-Partition key strategy:
-
-For authenticated requests: Use User ID from JWT claims (sub claim)
-For unauthenticated: Use IP address from X-Forwarded-For header (if behind proxy) or RemoteIpAddress
-Fallback to "unknown" if neither available
-Code pattern:
-
-csharp    var userId = context.User?.FindFirst("sub")?.Value;
-    if (userId == null)
-    {
-        var ip = context.Request.Headers["X-Forwarded-For"].FirstOrDefault()
-            ?? context.Connection.RemoteIpAddress?.ToString();
-        userId = ip ?? "unknown";
-    }
-Custom rejection response (options.OnRejected):
-
-Set StatusCode = 429
-Add Retry-After header in seconds
-Return JSON with:
-
-json    {
-      "error": "Rate limit exceeded. Please try again later.",
-      "retryAfter": 45,
-      "policyName": "global-api",
-      "limit": 1000,
-      "window": 60
-    }
-
-Include structured logging (IP/UserID, endpoint, policy, limit details)
-
-Additional requirements:
-
-Respect Enabled setting - if false, register services but don't apply any rate limiting
-Log configuration on startup (policies registered, limits, enabled/disabled status)
-Handle X-Forwarded-For for reverse proxy scenarios (Cloudflare, nginx, load balancers)
-Graceful degradation if settings validation fails (log error, disable rate limiting, don't crash)
-
-DO NOT put implementation directly in Program.cs - keep it clean via extension method
-3. Middleware Registration
-Create or update ApplicationBuilderExtensions.cs in PutZige.API/Extensions/:
-
-Create: UseRateLimitingMiddleware(this IApplicationBuilder app)
-Call app.UseRateLimiter() - built-in middleware
-CRITICAL Middleware Order:
-
-csharp  app.UseRouting();
-  app.UseAuthentication();  // MUST be before rate limiting (for User ID extraction)
-  app.UseRateLimitingMiddleware(); // ← Add here
-  app.UseAuthorization();
-  app.MapControllers();
-
-Add XML documentation explaining middleware order importance
-Check if rate limiting is enabled before calling UseRateLimiter()
-
-4. Apply Rate Limiting to Controllers
-Update AuthController.cs (only these endpoints need explicit attributes):
-csharp[HttpPost("login")]
-[EnableRateLimiting("login")] // ← 5/15min
-public async Task<ActionResult<ApiResponse<LoginResponse>>> Login(...)
-
-[HttpPost("refresh-token")]
-[EnableRateLimiting("refresh-token")] // ← 10/15min
-public async Task<ActionResult<ApiResponse<RefreshTokenResponse>>> RefreshToken(...)
-Update UsersController.cs:
-csharp[HttpPost]
-[EnableRateLimiting("registration")] // ← 3/hour
-public async Task<ActionResult<ApiResponse<RegisterUserResponse>>> CreateUser(...)
-All other endpoints:
-
-DO NOT add any attributes
-GlobalLimiter automatically applies Sliding Window (1000/min)
-Secure by default
-
-5. Program.cs Integration (Keep it Clean)
-In Program.cs, only add these TWO lines:
-csharp// Service registration (after AddControllers, before Build)
-builder.Services.AddRateLimitingConfiguration(builder.Configuration);
-
-// Middleware pipeline (AFTER UseAuthentication, BEFORE UseAuthorization)
-app.UseRateLimitingMiddleware();
-Show exact placement in Program.cs - before and after context for clarity
-6. Distributed Cache Support (Production Ready - Optional)
-If UseDistributedCache = true in settings:
-
-Connect to Redis using provided connection string
-Use partitioned rate limiter with Redis-backed distributed cache
-Redis key format: ratelimit:{policyName}:{partitionKey}
-Graceful fallback to in-memory if Redis unavailable (log warning, don't crash)
-Add try-catch around Redis connection with proper error handling
-
-Redis setup notes:
-
-Document connection string format in appsettings comments
-Explain when to enable (multi-server, horizontal scaling)
-Note that single-server deployments don't need Redis
-
-7. Logging and Monitoring
-Structured logging requirements:
-On Startup:
-
-Log: Rate limiting enabled/disabled
-Log: Policies registered (names, limits, windows)
-Log: GlobalLimiter configuration (limit, window, segments)
-Log: Distributed cache status (enabled/disabled, Redis connection status)
-
-On Rate Limit Hit (Warning level):
-csharp_logger.LogWarning(
-    "Rate limit exceeded: Policy={PolicyName}, Endpoint={Endpoint}, Partition={PartitionKey}, " +
-    "Limit={Limit}, Window={WindowSeconds}s, Algorithm={Algorithm}",
-    policyName, endpoint, partitionKey, permitLimit, windowSeconds, "SlidingWindow"
-);
-```
-
-**On Configuration Error (Error level):**
-- Log validation failures
-- Log Redis connection failures
-- Always include actionable error messages
-
-**Never log**:
-- Sensitive user data
-- Full JWT tokens
-- Passwords or credentials
-
-### 8. Error Handling
-
-**Configuration validation failure**:
-- Log detailed error with which setting failed
-- Disable rate limiting (set Enabled = false internally)
-- Continue application startup (don't crash)
-- Return warning in health check endpoint
-
-**Redis connection failure**:
-- Log warning with connection details (not password)
-- Fallback to in-memory rate limiting
-- Set flag for monitoring/alerts
-- Retry connection in background (optional)
-
-**Runtime errors**:
-- Catch exceptions in rate limiting logic
-- Log error and allow request through (fail open for availability)
-- Track error count for monitoring
-
-### 9. Security Considerations
-
-**IP Address Handling**:
-- Check `X-Forwarded-For` header first (trusted proxies only)
-- Validate IP format (prevent header injection)
-- Handle IPv6 addresses correctly
-- Normalize IPs (remove port numbers)
-
-**User ID Extraction**:
-- Extract from `sub` claim in JWT
-- Validate claim exists and is not empty
-- Don't trust client-provided user IDs (only from validated JWT)
-
-**Attack Prevention**:
-- GlobalLimiter prevents DDoS on new endpoints
-- Specific policies prevent brute force (login) and spam (registration)
-- Sliding window prevents boundary gaming
-- Distributed cache prevents cross-server abuse
-
-### 10. Performance Considerations
-
-**Sliding Window Trade-offs**:
-- Memory: ~2x Fixed Window (8 segments × users)
-- CPU: Minimal overhead per request
-- **Worth it** for chat UX (smoother experience)
-
-**Optimization tips**:
-- SegmentsPerWindow = 8 is optimal (balance accuracy vs memory)
-- For extreme high traffic, reduce to 4 segments
-- Monitor memory usage in production
-- Consider Redis for >10K concurrent users
-
-**Benchmarking**:
-- Document expected memory per 1000 users
-- Provide guidance on when to scale horizontally
-- Redis becomes important at ~50K+ requests/min
-
-## Code Quality Standards:
-
-- Follow SOLID principles
-- Keep Program.cs minimal (max 2 lines for rate limiting)
-- XML documentation on all public methods and classes
-- Structured logging with ILogger<T> (never log sensitive data)
-- Use existing project conventions exactly (Settings folders, Validators, Extensions)
-- Configuration-driven (zero hardcoded values)
-- Environment-specific settings (dev/staging/prod with appropriate limits)
-- Feature toggle support (Enabled flag)
-- Defensive coding (null checks, graceful degradation, fail-open on errors)
-- Follow async/await best practices
-
-## Deliverables:
-
-1. **RateLimitSettings.cs** - Configuration class with Fixed and Sliding window settings
-2. **RateLimitSettingsValidator.cs** - FluentValidation validator for all settings
-3. **RateLimitingExtensions.cs** - Complete service registration with:
-   - Named policies (login, refresh-token, registration)
-   - GlobalLimiter with smart bypass logic
-   - Rejection handler with detailed response
-   - Distributed cache support (optional)
-   - Comprehensive logging
-4. **ApplicationBuilderExtensions.cs** - Middleware extension with correct order
-5. **Updated AuthController.cs** - Only methods with [EnableRateLimiting] attributes
-6. **Updated UsersController.cs** - Only methods with [EnableRateLimiting] attributes
-7. **Updated appsettings.json** - All environments (json, Development, Staging, Production)
-8. **Updated Program.cs** - Clean integration (show exact 2-line placement)
-9. **Implementation Notes** - Document explaining:
-   - Why Sliding Window for chat (UX benefits, boundary gaming prevention)
-   - Why Fixed Window for auth (simplicity, sufficient protection)
-   - Why GlobalLimiter (secure by default, zero maintenance)
-   - Middleware order criticality (auth before rate limit)
-   - User ID vs IP partitioning strategy
-   - When to use Redis (multi-server, scaling guidance)
-   - Memory implications and optimization tips
-   - Monitoring and alerting recommendations
-   - How to disable for testing/debugging
-
-## Output Format:
-```
-## 1. CONFIGURATION (IOptions + FluentValidation)
-
-### RateLimitSettings.cs
-[complete code]
-
-### RateLimitSettingsValidator.cs
-[complete code with all validation rules]
-
-### appsettings.json
-[production config]
-
-### appsettings.Development.json
-[dev config - relaxed limits]
-
-### appsettings.Staging.json
-[staging config - moderate limits]
-
-### appsettings.Production.json
-[production overrides if any]
-
-## 2. EXTENSIONS (Keep Program.cs Clean)
-
-### RateLimitingExtensions.cs
-[complete implementation including:
- - Service registration method
- - Named policies configuration (Fixed Window)
- - GlobalLimiter configuration (Sliding Window with smart bypass)
- - Partition key logic (User ID + IP with X-Forwarded-For)
- - Rejection handler with detailed JSON response
- - Structured logging throughout
- - Redis support (conditional based on settings)
- - Error handling and graceful degradation
- - XML documentation
-]
-
-### ApplicationBuilderExtensions.cs
-[middleware registration with:
- - Correct order explanation
- - Enabled flag check
- - XML documentation
-]
-
-## 3. CONTROLLERS (Apply Specific Attributes Only)
-
-### AuthController.cs (UPDATED)
-[show only the two methods with attributes - login and refresh-token]
-
-### UsersController.cs (UPDATED)
-[show only the CreateUser method with registration attribute]
-
-## 4. PROGRAM.CS (Minimal Integration)
-
-### Before (existing code context):
-[show surrounding lines for context]
-
-### Add these 2 lines:
-[exact code to add with comments]
-
-### After (updated code):
-[show final placement in context]
-
-## 5. IMPLEMENTATION NOTES
-
-### Architecture Decisions:
-- Why Sliding Window for chat endpoints
-- Why Fixed Window for authentication
-- Why GlobalLimiter vs manual attributes
-- Middleware order importance
-
-### Security Considerations:
-- User ID vs IP partitioning
-- X-Forwarded-For header handling
-- Attack vectors prevented
-
-### Performance & Scaling:
-- Memory implications of Sliding Window
-- When to enable Redis (traffic thresholds)
-- Optimization tips for high traffic
-
-### Operational Guide:
-- How to monitor rate limiting
-- How to adjust limits per environment
-- How to disable for testing
-- How to troubleshoot issues
-- Redis setup and fallback behavior
-
-### Breaking Changes:
-[any breaking changes or migration notes]
-Show me the complete, production-ready implementation following PutZige's clean architecture patterns. The code must be ready to merge into production.
+﻿You are a principal security tester at Microsoft with 15+ years of experience testing distributed systems, chat applications, and rate limiting implementations. Your job is to find vulnerabilities, edge cases, and breaking points that could be exploited by attackers or cause production incidents.
+System Under Test:
+
+PutZige Chat Application - Real-time messaging platform
+Rate Limiting Implementation: ASP.NET Core built-in rate limiting
+
+GlobalLimiter: Sliding Window (10,000/min per user in dev, 1,000/min in prod)
+Login: Fixed Window (1,000/min dev, 5/15min prod)
+Registration: Fixed Window (100/min dev, 3/hour prod)
+RefreshToken: Fixed Window (1,000/min dev, 10/15min prod)
+
+
+Partition Strategy: User ID (from JWT) for authenticated, IP for unauthenticated
+Architecture: Clean Architecture, .NET 10, distributed cache support (Redis optional)
+
+Attack Vectors to Test:
+1. Boundary Gaming & Time-based Exploits
+
+Window boundary exploitation (send requests at :59 and :00 seconds)
+Clock skew attacks (server time manipulation)
+Timezone exploitation
+Leap second edge cases
+Sliding window segment boundary attacks
+
+2. Identity Spoofing & Bypass
+
+IP spoofing via X-Forwarded-For header injection
+JWT token manipulation to change User ID
+Multiple tokens for same user (session hijacking)
+Null/empty User ID exploitation
+Special characters in User ID (SQL injection style)
+IPv6 vs IPv4 switching to reset limits
+VPN/proxy hopping to get new IPs
+
+3. Distributed Attack Patterns
+
+Distributed brute force (low rate from many IPs)
+Slowloris-style slow requests to exhaust connections
+Cache poisoning (Redis exploitation if enabled)
+Race conditions in counter updates
+Concurrent request floods (hit limit exactly at same millisecond)
+Multi-threaded boundary testing
+
+4. Resource Exhaustion
+
+Memory exhaustion via unique partition keys
+Redis connection pool exhaustion
+Sliding window segment overflow
+Partition key collision attacks
+Large payload attacks combined with rate limiting
+
+5. Configuration & State Manipulation
+
+Disabled rate limiting bypass testing
+Invalid configuration injection
+Runtime configuration changes
+Redis failover scenarios
+In-memory vs distributed cache inconsistencies
+
+6. Business Logic Exploitation
+
+Account enumeration via differential responses
+Timing attacks to distinguish valid/invalid users
+Registration spam with disposable emails
+Password reset flood attacks
+Refresh token rotation exploitation
+
+7. Edge Cases & Corner Cases
+
+Exactly at limit boundary (1000th request)
+Zero window duration
+Negative permit limits
+Overflow scenarios (int.MaxValue requests)
+Expired vs active window edge cases
+Multiple policies on same endpoint collision
+
+Test Organization by Layer:
+Layer 1: PutZige.Infrastructure.Tests/RateLimiting/ (NEW FOLDER)
+File: RateLimitPartitioningTests.cs (Critical - Partition Logic)
+
+GetPartitionKey_AuthenticatedUser_ReturnsUserId
+GetPartitionKey_UnauthenticatedUser_ReturnsIpAddress
+GetPartitionKey_XForwardedForHeader_UsesForwardedIp
+GetPartitionKey_MultipleXForwardedForIps_UsesMostTrustedIp
+GetPartitionKey_InvalidXForwardedFor_FallsBackToRemoteIp
+GetPartitionKey_NullUserIdAndNullIp_ReturnsUnknown
+GetPartitionKey_MaliciousXForwardedForInjection_Sanitized
+GetPartitionKey_IPv6Address_NormalizedCorrectly
+GetPartitionKey_IPv6WithPort_PortStripped
+GetPartitionKey_UserIdWithSpecialCharacters_Sanitized
+
+File: SlidingWindowLimiterTests.cs (Global API)
+11. SlidingWindow_WithinLimit_AllowsRequests
+12. SlidingWindow_ExceedsLimit_Returns429
+13. SlidingWindow_AtExactLimit_1000thRequestAllowed_1001stDenied
+14. SlidingWindow_WindowBoundary_NoGaming
+15. SlidingWindow_SegmentRollover_CountsCorrectly
+16. SlidingWindow_ConcurrentRequests_ThreadSafe
+17. SlidingWindow_MultipleUsers_IndependentCounters
+18. SlidingWindow_SameUserDifferentEndpoints_SharesCounter
+19. SlidingWindow_WindowExpiry_ResetsCounter
+20. SlidingWindow_PartialWindow_AllowsPartialRequests
+File: FixedWindowLimiterTests.cs (Auth Endpoints)
+21. FixedWindow_Login_5Attempts_6thDenied
+22. FixedWindow_Login_WindowReset_AllowsNew5Attempts
+23. FixedWindow_Login_BoundaryExploit_4At59Sec_2At00Sec_BlocksCorrectly
+24. FixedWindow_Registration_3Attempts_4thDenied
+25. FixedWindow_RefreshToken_10Attempts_11thDenied
+26. FixedWindow_DifferentPolicies_IndependentCounters
+27. FixedWindow_SameIpDifferentEndpoints_IndependentLimits
+File: RedisDistributedCacheTests.cs (Production Scenarios)
+28. Redis_Enabled_UsesDistributedCounter
+29. Redis_ConnectionFailure_FallsBackToInMemory
+30. Redis_KeyExpiry_ResetsCounterCorrectly
+31. Redis_MultipleServers_ShareCounters
+32. Redis_ConnectionPoolExhaustion_HandlesGracefully
+33. Redis_PartitionKeyCollision_IsolatedCorrectly
+34. Redis_NetworkLatency_DoesNotBlockRequests
+Layer 2: PutZige.Application.Tests/RateLimiting/ (NEW FOLDER)
+File: RateLimitSettingsValidatorTests.cs (Configuration Security)
+35. Validate_ValidSettings_Passes
+36. Validate_PermitLimitZero_Fails
+37. Validate_PermitLimitNegative_Fails
+38. Validate_PermitLimitOverflow_Fails
+39. Validate_WindowSecondsZero_Fails
+40. Validate_WindowSecondsNegative_Fails
+41. Validate_WindowSecondsTooLarge_Fails
+42. Validate_SegmentsPerWindowTooLow_Fails
+43. Validate_SegmentsPerWindowTooHigh_Fails
+44. Validate_AllPoliciesInvalid_ReturnsAllErrors
+Layer 3: PutZige.API.Tests/Integration/RateLimiting/ (NEW FOLDER)
+File: LoginRateLimitIntegrationTests.cs (Critical - Brute Force Protection)
+45. Login_5FailedAttempts_6thReturns429
+46. Login_5FailedAttempts_WaitForReset_AllowsNewAttempts
+47. Login_4Attempts_SuccessfulLogin_CounterDoesNotReset (security: counter persists)
+48. Login_RateLimitExceeded_RetryAfterHeaderPresent
+49. Login_RateLimitExceeded_ResponseContainsCorrectRetryTime
+50. Login_DifferentIPs_IndependentLimits
+51. Login_SameIP_DifferentUsers_SharesLimit (unauthenticated = IP-based)
+52. Login_XForwardedForSpoofing_UsesActualClientIP
+53. Login_ConcurrentRequests_ThreadSafeCounter
+54. Login_BoundaryAttack_SplitAcrossWindowBoundary_EnforcesLimit
+File: RegistrationRateLimitIntegrationTests.cs (Spam Prevention)
+55. Registration_3Accounts_4thReturns429
+56. Registration_SpamWithDisposableEmails_LimitEnforced
+57. Registration_DifferentIPs_IndependentLimits
+58. Registration_SameIPMultipleAttempts_SharesLimit
+59. Registration_RateLimitExceeded_ReturnsCorrectErrorMessage
+60. Registration_VPNHopping_DetectsAndBlocks (if X-Forwarded-For tracking enabled)
+File: RefreshTokenRateLimitIntegrationTests.cs (Token Rotation Attacks)
+61. RefreshToken_10Attempts_11thReturns429
+62. RefreshToken_SameUser_MultipleDevices_SharesLimit
+63. RefreshToken_ExpiredToken_StillCountsTowardLimit
+64. RefreshToken_RevokedToken_StillCountsTowardLimit
+65. RefreshToken_RateLimitExceeded_DoesNotRotateToken
+File: GlobalApiRateLimitIntegrationTests.cs (Chat Endpoints)
+66. GlobalApi_1000Requests_AllSucceed
+67. GlobalApi_1001Requests_LastReturns429
+68. GlobalApi_SlidingWindow_SmoothDistribution_NoHarshCutoff
+69. GlobalApi_BurstTraffic_50MessagesIn5Seconds_Allowed
+70. GlobalApi_SustainedAbuse_2000RequestsIn60Sec_BlockedAt1000
+71. GlobalApi_AuthenticatedUser_UsesUserId_NotIP
+72. GlobalApi_MultipleEndpoints_SharesGlobalCounter
+73. GlobalApi_SpecificPolicyOverride_DoesNotApplyGlobal
+File: RateLimitBypassTests.cs (Security - Negative Testing)
+74. Bypass_DisabledRateLimiting_AllowsUnlimitedRequests
+75. Bypass_InvalidJWT_FallsBackToIPLimiting
+76. Bypass_NoAuthHeader_UsesIPLimiting
+77. Bypass_AdminRole_DoesNotBypassLimit (unless explicitly coded)
+78. Bypass_SystemAccount_DoesNotBypassLimit
+File: RateLimitEdgeCasesTests.cs (Corner Cases)
+79. EdgeCase_ExactlyAtLimit_1000thRequestAllowed
+80. EdgeCase_ConcurrentRequestsAtLimit_OnlyCorrectNumberAllowed
+81. EdgeCase_WindowExpiry_DuringRequest_HandlesCorrectly
+82. EdgeCase_ServerTimeChange_DoesNotResetCounters
+83. EdgeCase_LeapSecond_DoesNotCauseError
+84. EdgeCase_NegativeWindowDuration_Rejected
+85. EdgeCase_ZeroPermitLimit_RejectsAllRequests
+86. EdgeCase_IntMaxValueRequests_HandlesOverflow
+File: RateLimitDistributedTests.cs (Multi-Server Scenarios)
+87. Distributed_MultipleServers_ShareCountersViaRedis
+88. Distributed_RedisDown_FallsBackToInMemory_LogsWarning
+89. Distributed_RedisPartition_HandlesGracefully
+90. Distributed_CacheMiss_DoesNotResetCounter
+91. Distributed_ClockSkewBetweenServers_HandlesCorrectly
+File: RateLimitPerformanceTests.cs (Load & Stress)
+92. Performance_1000ConcurrentUsers_MaintainsLimits
+93. Performance_SlidingWindow_MemoryUsage_AcceptableRange
+94. Performance_HighThroughput_10KRequestsPerSecond_NoBottleneck
+95. Performance_LongRunningTest_24Hours_NoMemoryLeak
+File: RateLimitSecurityTests.cs (Attack Simulation)
+96. Security_BruteForceLogin_BlockedAt5Attempts
+97. Security_DistributedBruteForce_MultipleIPs_DetectedAndBlocked
+98. Security_AccountEnumeration_ResponseTimingConsistent
+99. Security_HeaderInjection_XForwardedFor_Sanitized
+100. Security_SQLInjectionInUserId_Sanitized
+101. Security_XSSInPartitionKey_Sanitized
+102. Security_PasswordSpray_AcrossMultipleAccounts_Limited
+File: RateLimitMonitoringTests.cs (Observability)
+103. Monitoring_RateLimitHit_LogsStructuredWarning
+104. Monitoring_ConfigurationLoaded_LogsInfo
+105. Monitoring_RedisFailure_LogsError
+106. Monitoring_RateLimitExceeded_IncludesPartitionKey
+107. Monitoring_RateLimitExceeded_IncludesPolicyName
+Layer 4: PutZige.API.Tests/Controllers/ (Existing - UPDATE)
+File: AuthControllerTests.cs (UPDATE EXISTING)
+108. Login_RateLimitExceeded_Returns429WithCorrectStatusCode
+109. Login_RateLimitExceeded_ResponseMatchesSchema
+110. RefreshToken_RateLimitExceeded_Returns429
+File: UsersControllerTests.cs (UPDATE EXISTING)
+111. CreateUser_RateLimitExceeded_Returns429
+112. CreateUser_RegistrationSpam_BlockedAfter3Attempts
+Test Categories Priority:
+P0 (Critical - Must Have):
+
+Tests 45-54 (Login rate limiting - brute force protection)
+Tests 66-73 (Global API - chat functionality)
+Tests 96-102 (Security attack simulation)
+
+P1 (High - Security):
+
+Tests 1-10 (Partition key logic)
+Tests 11-20 (Sliding window correctness)
+Tests 21-27 (Fixed window correctness)
+Tests 55-60 (Registration spam)
+
+P2 (Medium - Reliability):
+
+Tests 28-34 (Redis distributed scenarios)
+Tests 74-78 (Bypass scenarios)
+Tests 79-86 (Edge cases)
+Tests 87-91 (Multi-server)
+
+P3 (Nice to Have - Performance & Monitoring):
+
+Tests 92-95 (Performance)
+Tests 103-107 (Monitoring)
+
+Testing Standards:
+Integration Tests (API.Tests):
+
+Use WebApplicationFactory<Program>
+Real HTTP requests via HttpClient
+Real rate limiting middleware (not mocked)
+Use in-memory database for test isolation
+Configure test-specific rate limits (lower thresholds for faster tests)
+Parallel test execution support (isolated partition keys)
+
+Unit Tests (Infrastructure.Tests, Application.Tests):
+
+Mock dependencies (IOptions, ILogger, Redis)
+Test single responsibility
+Fast execution (<100ms per test)
+Deterministic (no time-based flakiness)
+
+Security Tests:
+
+Test actual attack vectors
+Use realistic payloads
+Verify logging of suspicious activity
+Test defense in depth (multiple layers)
+
+Performance Tests:
+
+Measure memory under load
+Measure response time degradation
+Test concurrent access patterns
+Identify bottlenecks
+
+Code Quality:
+
+Naming: MethodName_Scenario_ExpectedBehavior
+Arrange-Act-Assert pattern
+Use xUnit, FluentAssertions, Moq
+XML comments on complex tests
+Parameterized tests with [Theory] where appropriate
+Test data builders for complex objects
+Async/await properly
+Dispose resources (WebApplicationFactory, HttpClient)
+
+Deliverables:
+For each test file, provide:
+
+Complete test class with all test methods
+Setup/teardown logic
+Helper methods for common operations (e.g., SendLoginRequests(count))
+Test data builders if needed
+Comments explaining attack vectors for security tests
+
+Output Format:
+## LAYER 1: INFRASTRUCTURE.TESTS
+
+### File: RateLimitPartitioningTests.cs
+[Complete test class with tests 1-10]
+
+### File: SlidingWindowLimiterTests.cs
+[Complete test class with tests 11-20]
+
+[Continue for all infrastructure tests...]
+
+## LAYER 2: APPLICATION.TESTS
+
+### File: RateLimitSettingsValidatorTests.cs
+[Complete test class with tests 35-44]
+
+## LAYER 3: API.TESTS (Integration)
+
+### File: LoginRateLimitIntegrationTests.cs
+[Complete test class with tests 45-54]
+
+[Continue for all integration tests...]
+
+## LAYER 4: API.TESTS (Controller Updates)
+
+### File: AuthControllerTests.cs (UPDATE)
+[Show new test methods to add: 108-110]
+
+### File: UsersControllerTests.cs (UPDATE)
+[Show new test methods to add: 111-112]
+
+## TEST EXECUTION GUIDE
+
+### How to run specific test categories:
+[Commands for P0, P1, P2, P3]
+
+### How to run security tests:
+[Commands and setup]
+
+### How to run performance tests:
+[Commands and environment setup]
+
+## KNOWN ATTACK VECTORS COVERED
+
+[Summary of security vulnerabilities tested]
+
+## ADDITIONAL SECURITY RECOMMENDATIONS
+
+[Any additional testing needed beyond this suite]
+Implement all 112 test cases as a principal security tester would. Think like an attacker trying to break the system. Be thorough, be paranoid, be comprehensive.
+
+Test Distribution Summary:
+
+Infrastructure.Tests: 34 tests (partition logic, limiters, Redis)
+Application.Tests: 10 tests (configuration validation)
+API.Tests/Integration: 63 tests (end-to-end scenarios, security, performance)
+API.Tests/Controllers: 5 tests (controller updates)
+
+Total: 112 comprehensive security-focused tests 🔒🚀
+This is production-grade, Microsoft-level testing. Ship it! ✅
