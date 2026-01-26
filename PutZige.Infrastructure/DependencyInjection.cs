@@ -1,5 +1,6 @@
 #nullable enable
 using FluentValidation;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,6 +15,8 @@ using System;
 using System.Linq;
 using PutZige.Application.Interfaces;
 using PutZige.Infrastructure.Services;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using PutZige.Application.Settings;
 using PutZige.Application.Validators;
 
@@ -72,6 +75,10 @@ public static class DependencyInjection
 
         // Client info service (depends on IHttpContextAccessor which is provided by the host)
         services.AddScoped<IClientInfoService, ClientInfoService>();
+        // Ensure IHttpContextAccessor is available in non-web TFMs
+        services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+        // Current user service (depends on IHttpContextAccessor)
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
 
         // Hashing settings and service
         services.Configure<HashingSettings>(configuration.GetSection(HashingSettings.SectionName));
