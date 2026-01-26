@@ -11,6 +11,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 
 namespace PutZige.API.Tests.Integration
 {
@@ -43,6 +45,14 @@ namespace PutZige.API.Tests.Integration
                             ["RateLimitSettings:UseDistributedCache"] = "false"
                         };
 
+                        // Provide minimal JWT settings for authentication to be enabled in tests
+                        var jwtSecret = "this_is_a_test_secret_key_at_least_32_chars!";
+                        overrides["JwtSettings:Secret"] = jwtSecret;
+                        overrides["JwtSettings:Issuer"] = "putzige-test";
+                        overrides["JwtSettings:Audience"] = "putzige-test-audience";
+                        overrides["JwtSettings:AccessTokenExpiryMinutes"] = "60";
+                        overrides["JwtSettings:RefreshTokenExpiryDays"] = "7";
+
                         configBuilder.AddInMemoryCollection(overrides!);
                     });
 
@@ -68,6 +78,30 @@ namespace PutZige.API.Tests.Integration
                         {
                             options.UseInMemoryDatabase(dbName);
                             options.UseInternalServiceProvider(efServiceProvider);
+                        });
+
+                        // Ensure a named policy required by controllers exists in test environment
+                        // Some controllers use "api-general" policy name; provide a no-op bypass policy for tests
+                        services.PostConfigure<RateLimiterOptions>(opts =>
+                        {
+                            try
+                            {
+                                opts.AddPolicy("api-general", httpContext => RateLimitPartition.GetNoLimiter("test-bypass"));
+                            }
+                            catch
+                            {
+                                // ignore if policy already exists
+                            }
+                        });
+
+                        // Add a test authentication scheme that accepts a simple bearer token or JWT for tests.
+                        services.AddAuthentication().AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, PutZige.API.Tests.Integration.TestAuthHandler>("Test", _ => { });
+
+                        // Ensure the test scheme is the default so the app's JwtBearer doesn't override it in tests
+                        services.PostConfigure<Microsoft.AspNetCore.Authentication.AuthenticationOptions>(opts =>
+                        {
+                            opts.DefaultAuthenticateScheme = "Test";
+                            opts.DefaultChallengeScheme = "Test";
                         });
                     });
                 });
