@@ -72,5 +72,12 @@ namespace PutZige.Application.Common.Constants
             public const int MaxPageSize = 100;
             public const int MinPageSize = 10;
         }
+
+        public static class Messaging
+        {
+            public const int MaxMessageLength = 4000;
+            public const int DefaultPageSize = 50;
+            public const int MaxPageSize = 100;
+        }
     }
 }

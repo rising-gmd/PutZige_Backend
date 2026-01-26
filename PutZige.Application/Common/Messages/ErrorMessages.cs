@@ -65,5 +65,13 @@ namespace PutZige.Application.Common.Messages
             /// </summary>
             public const string ValidationFailed = "Rate limit configuration invalid; rate limiting disabled.";
         }
+
+        public static class Messaging
+        {
+            public const string ReceiverNotFound = "Receiver not found";
+            public const string MessageTooLong = "Message exceeds maximum length";
+            public const string MessageNotFound = "Message not found";
+            public const string UnauthorizedAccess = "Unauthorized to access this message";
+        }
     }
 }
