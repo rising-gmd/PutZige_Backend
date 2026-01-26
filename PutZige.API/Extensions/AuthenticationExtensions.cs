@@ -54,6 +54,21 @@ namespace PutZige.API.Extensions
                         ValidateLifetime = true,
                         ClockSkew = TimeSpan.FromSeconds(30)
                     };
+                    // Allow JWT from query string for SignalR
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnMessageReceived = context =>
+                        {
+                            var accessToken = context.Request.Query["access_token"].ToString();
+                            var path = context.HttpContext.Request.Path;
+                            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                            {
+                                context.Token = accessToken;
+                            }
+
+                            return System.Threading.Tasks.Task.CompletedTask;
+                        }
+                    };
                 });
 
                 logger?.LogInformation("JWT authentication configured");

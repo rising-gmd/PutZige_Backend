@@ -33,11 +33,14 @@ try
     builder.Services.AddApplicationServices();
     builder.Services.AddInfrastructureServices(builder.Configuration, builder.Environment);
     builder.Services.AddRateLimitingConfiguration(builder.Configuration);
+    builder.Services.AddSignalRConfiguration(builder.Configuration);
 
     var app = builder.Build();
 
     // Middleware pipeline
     app.ConfigureMiddlewarePipeline();
+
+    app.MapSignalRHubs();
 
     Log.Information("Application starting");
     app.Run();
