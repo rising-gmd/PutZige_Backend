@@ -48,6 +48,10 @@ namespace PutZige.Domain.Entities
         public UserSession? Session { get; set; }
         public UserRateLimit? RateLimit { get; set; }
         public UserMetadata? Metadata { get; set; }
+        
+        // Messaging navigation
+        public System.Collections.Generic.ICollection<Message>? SentMessages { get; set; }
+        public System.Collections.Generic.ICollection<Message>? ReceivedMessages { get; set; }
     }
 }
 

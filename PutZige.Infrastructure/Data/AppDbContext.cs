@@ -27,6 +27,11 @@ public class AppDbContext : DbContext
     public DbSet<User> Users => Set<User>();
 
     /// <summary>
+    /// Messages table set.
+    /// </summary>
+    public DbSet<Message> Messages => Set<Message>();
+
+    /// <summary>
     /// User settings table set.
     /// </summary>
     public DbSet<UserSettings> UserSettings => Set<UserSettings>();
