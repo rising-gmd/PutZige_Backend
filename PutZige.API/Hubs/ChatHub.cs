@@ -82,7 +82,7 @@ public class ChatHub : Hub
                 await _messagingService.MarkMessageAsDeliveredAsync(response.MessageId);
             }
 
-            await Clients.Caller.SendAsync("MessageSent", response);
+            await Clients.Caller.SendAsync(PutZige.Application.Common.Constants.SignalRConstants.Events.MessageSent, response);
         }
         catch (InvalidOperationException ex)
         {

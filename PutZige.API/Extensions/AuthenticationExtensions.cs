@@ -61,7 +61,7 @@ namespace PutZige.API.Extensions
                         {
                             var accessToken = context.Request.Query["access_token"].ToString();
                             var path = context.HttpContext.Request.Path;
-                            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments(PutZige.Application.Common.Constants.SignalRConstants.HubRoute))
                             {
                                 context.Token = accessToken;
                             }

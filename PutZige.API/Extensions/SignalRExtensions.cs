@@ -30,6 +30,6 @@ public static class SignalRExtensions
 
     public static void MapSignalRHubs(this WebApplication app)
     {
-        app.MapHub<ChatHub>("/hubs/chat");
+        app.MapHub<ChatHub>(PutZige.Application.Common.Constants.SignalRConstants.HubRoute);
     }
 }
