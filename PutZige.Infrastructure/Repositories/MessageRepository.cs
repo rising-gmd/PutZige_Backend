@@ -28,21 +28,20 @@ public class MessageRepository : Repository<Message>, IMessageRepository
         var query = _dbSet.Where(m => (m.SenderId == userId && m.ReceiverId == otherUserId) || (m.SenderId == otherUserId && m.ReceiverId == userId))
                           .OrderByDescending(m => m.SentAt);
 
-        var totalCountTask = query.CountAsync(ct);
+        // Execute count and list sequentially to avoid concurrent usage of the DbContext which is not thread-safe.
+        var totalCount = await query.CountAsync(ct).ConfigureAwait(false);
 
         var skip = (pageNumber - 1) * pageSize;
 
-        var messagesTask = query
+        var messages = await query
             .Include(m => m.Sender)
             .Include(m => m.Receiver)
             .AsNoTracking()
             .Skip(skip)
             .Take(pageSize)
-            .ToListAsync(ct);
+            .ToListAsync(ct).ConfigureAwait(false);
 
-        await Task.WhenAll(totalCountTask, messagesTask).ConfigureAwait(false);
-
-        return (messagesTask.Result, totalCountTask.Result);
+        return (messages, totalCount);
     }
 
     public async Task AddAsync(Message message, CancellationToken ct = default)
