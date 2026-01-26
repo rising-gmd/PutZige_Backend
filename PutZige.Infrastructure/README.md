@@ -77,6 +77,11 @@ services.AddInfrastructureServices(configuration, environment);
 
 This registers `AppDbContext`, repositories, and `JwtTokenService` along with `JwtSettings` configuration.
 
+Messaging and SignalR:
+- `MessageRepository` implements message persistence and optimized conversation queries.
+- `CurrentUserService` and `ClientInfoService` expose request-scoped metadata and current user claims.
+- SignalR configuration is available via `SignalRSettings` in app configuration and is wired in the API project.
+
 ## Dependencies
 
 - `Microsoft.EntityFrameworkCore`

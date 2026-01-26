@@ -19,5 +19,11 @@ namespace PutZige.Application.Common.Messages
         {
             public const string OperationSuccessful = "Operation completed successfully.";
         }
+
+        public static class Messaging
+        {
+            public const string MessageSent = "Message sent successfully";
+            public const string MessageMarkedAsRead = "Message marked as read";
+        }
     }
 }

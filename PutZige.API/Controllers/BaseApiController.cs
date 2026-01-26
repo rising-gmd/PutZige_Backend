@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PutZige.Application.DTOs.Common;
+using System;
+using System.Security.Claims;
 using System.Collections.Generic;
 
 namespace PutZige.API.Controllers
@@ -28,5 +30,22 @@ namespace PutZige.API.Controllers
 
         protected ActionResult<ApiResponse<T>> ServerError<T>(string message)
             => StatusCode(StatusCodes.Status500InternalServerError, ApiResponse<T>.Error(message, null, StatusCodes.Status500InternalServerError));
+
+        /// <summary>
+        /// Extracts the authenticated user's ID from JWT claims.
+        /// </summary>
+        /// <returns>Guid user id</returns>
+        /// <exception cref="UnauthorizedAccessException">If the user id claim is missing or invalid.</exception>
+        protected Guid GetUserIdFromClaims()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+
+            if (string.IsNullOrWhiteSpace(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+            {
+                throw new UnauthorizedAccessException("Invalid user token");
+            }
+
+            return userId;
+        }
     }
 }

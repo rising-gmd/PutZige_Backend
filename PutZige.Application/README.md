@@ -49,6 +49,7 @@ PutZige.Application/
 - `IUserService` / `UserService` - user related business logic
 - `IAuthService` / `AuthService` - authentication (login / refresh)
 - DTOs for auth flows under `DTOs/Auth/`
+ - `IMessagingService` / `MessagingService` - messaging business logic (send, conversation history, mark delivered/read)
 
 ## DTOs
 
