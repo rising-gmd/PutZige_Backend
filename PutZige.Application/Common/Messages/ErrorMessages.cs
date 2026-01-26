@@ -72,6 +72,11 @@ namespace PutZige.Application.Common.Messages
             public const string MessageTooLong = "Message exceeds maximum length";
             public const string MessageNotFound = "Message not found";
             public const string UnauthorizedAccess = "Unauthorized to access this message";
+            public const string SenderIdRequired = "senderId is required";
+            public const string ReceiverIdRequired = "receiverId is required";
+            public const string MessageTextRequired = "messageText is required";
+            public const string PageNumberOutOfRange = "pageNumber must be greater than zero";
+            public const string PageSizeOutOfRange = "pageSize must be between 1 and the configured maximum";
         }
     }
 }

@@ -63,6 +63,7 @@ public static class DependencyInjection
         // Register repositories and unit of work
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IMessageRepository, MessageRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         // JWT settings and token service

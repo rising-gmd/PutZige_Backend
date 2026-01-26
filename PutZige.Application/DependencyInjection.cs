@@ -25,6 +25,7 @@ public static class DependencyInjection
         // Register application services
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IMessagingService, MessagingService>();
 
         return services;
     }
