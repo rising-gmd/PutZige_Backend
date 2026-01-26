@@ -29,9 +29,9 @@ namespace PutZige.API.Controllers
         /// </summary>
         [HttpPost]
         [EnableRateLimiting("registration")]
-        public async Task<ActionResult<ApiResponse<RegisterUserResponse>>> CreateUser([FromBody] RegisterUserRequest request, CancellationToken ct)
+        public async Task<ActionResult<ApiResponse<RegisterUserResponse>>> CreateUser([FromBody] RegisterUserRequest request, CancellationToken ct = default)
         {
-            var response = await _userService.RegisterUserAsync(request.Email, request.Username, request.DisplayName, request.Password, ct);
+            var response = await _userService.RegisterUserAsync(request.Email ?? string.Empty, request.Username ?? string.Empty, request.DisplayName ?? string.Empty, request.Password ?? string.Empty, ct);
 
             return Created(response, SuccessMessages.Authentication.RegistrationSuccessful);
         }
