@@ -1,4 +1,4 @@
-// PutZige.API.Tests/Integration/RateLimiting/LoginRateLimitIntegrationTests.cs
+﻿// PutZige.API.Tests/Integration/RateLimiting/LoginRateLimitIntegrationTests.cs
 #nullable enable
 using System.Net;
 using System.Net.Http.Json;
@@ -36,6 +36,9 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             await db.SaveChangesAsync();
         }
 
+        /// <summary>
+        /// Verifies that Login_5FailedAttempts_6thReturns429 behaves as expected.
+        /// </summary>
         [Fact]
         public async Task Login_5FailedAttempts_6thReturns429()
         {
@@ -57,6 +60,9 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             sixthRes.Headers.RetryAfter.Should().NotBeNull();
         }
 
+        /// <summary>
+        /// Verifies that Login_5FailedAttempts_WaitForReset_AllowsNewAttempts behaves as expected.
+        /// </summary>
         [Fact]
         public async Task Login_5FailedAttempts_WaitForReset_AllowsNewAttempts()
         {
@@ -79,6 +85,9 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             ok.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.TooManyRequests);
         }
 
+        /// <summary>
+        /// Verifies that Login_4Attempts_SuccessfulLogin_CounterDoesNotReset behaves as expected.
+        /// </summary>
         [Fact]
         public async Task Login_4Attempts_SuccessfulLogin_CounterDoesNotReset()
         {
@@ -104,6 +113,9 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             nextRes.StatusCode.Should().BeOneOf(HttpStatusCode.BadRequest, HttpStatusCode.TooManyRequests);
         }
 
+        /// <summary>
+        /// Verifies that Login_RateLimitExceeded_RetryAfterHeaderPresent behaves as expected.
+        /// </summary>
         [Fact]
         public async Task Login_RateLimitExceeded_RetryAfterHeaderPresent()
         {
@@ -122,6 +134,9 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             res.Headers.RetryAfter.Should().NotBeNull();
         }
 
+        /// <summary>
+        /// Verifies that Login_RateLimitExceeded_ResponseContainsCorrectRetryTime behaves as expected.
+        /// </summary>
         [Fact]
         public async Task Login_RateLimitExceeded_ResponseContainsCorrectRetryTime()
         {
@@ -145,6 +160,9 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             }
         }
 
+        /// <summary>
+        /// Verifies that Login_DifferentIPs_IndependentLimits behaves as expected.
+        /// </summary>
         [Fact]
         public async Task Login_DifferentIPs_IndependentLimits()
         {
@@ -167,6 +185,9 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             res.StatusCode.Should().BeOneOf(HttpStatusCode.BadRequest, HttpStatusCode.OK, HttpStatusCode.TooManyRequests);
         }
 
+        /// <summary>
+        /// Verifies that Login_SameIP_DifferentUsers_SharesLimit behaves as expected.
+        /// </summary>
         [Fact]
         public async Task Login_SameIP_DifferentUsers_SharesLimit()
         {
@@ -188,6 +209,9 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             res.StatusCode.Should().BeOneOf(HttpStatusCode.TooManyRequests, HttpStatusCode.BadRequest);
         }
 
+        /// <summary>
+        /// Verifies that Login_XForwardedForSpoofing_UsesActualClientIP behaves as expected.
+        /// </summary>
         [Fact]
         public async Task Login_XForwardedForSpoofing_UsesActualClientIP()
         {

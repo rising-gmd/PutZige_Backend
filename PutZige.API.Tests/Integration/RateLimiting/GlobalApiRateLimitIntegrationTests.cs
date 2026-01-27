@@ -1,4 +1,4 @@
-// PutZige.API.Tests/Integration/RateLimiting/GlobalApiRateLimitIntegrationTests.cs
+﻿// PutZige.API.Tests/Integration/RateLimiting/GlobalApiRateLimitIntegrationTests.cs
 #nullable enable
 using System.Net;
 using System.Net.Http.Json;
@@ -14,6 +14,9 @@ namespace PutZige.API.Tests.Integration.RateLimiting
 {
     public class GlobalApiRateLimitIntegrationTests : IntegrationTestBase
     {
+        /// <summary>
+        /// Verifies that GlobalApi_1000Requests_AllSucceed behaves as expected.
+        /// </summary>
         [Fact]
         public async Task GlobalApi_1000Requests_AllSucceed()
         {
@@ -28,6 +31,9 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             tasks.Select(t => t.Result.StatusCode).Distinct().Should().Contain(HttpStatusCode.OK);
         }
 
+        /// <summary>
+        /// Verifies that GlobalApi_1001Requests_LastReturns429 behaves as expected.
+        /// </summary>
         [Fact]
         public async Task GlobalApi_1001Requests_LastReturns429()
         {
@@ -44,6 +50,9 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             codes.Should().Contain(c => c == HttpStatusCode.TooManyRequests || c == HttpStatusCode.OK);
         }
 
+        /// <summary>
+        /// Verifies that GlobalApi_SlidingWindow_SmoothDistribution_NoHarshCutoff behaves as expected.
+        /// </summary>
         [Fact]
         public async Task GlobalApi_SlidingWindow_SmoothDistribution_NoHarshCutoff()
         {
@@ -57,6 +66,9 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             res.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.TooManyRequests);
         }
 
+        /// <summary>
+        /// Verifies that GlobalApi_BurstTraffic_50MessagesIn5Seconds_Allowed behaves as expected.
+        /// </summary>
         [Fact]
         public async Task GlobalApi_BurstTraffic_50MessagesIn5Seconds_Allowed()
         {
@@ -66,6 +78,9 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             tasks.Select(t => t.Result.StatusCode).Distinct().Should().Contain(HttpStatusCode.OK);
         }
 
+        /// <summary>
+        /// Verifies that GlobalApi_SustainedAbuse_2000RequestsIn60Sec_BlockedAt1000 behaves as expected.
+        /// </summary>
         [Fact]
         public async Task GlobalApi_SustainedAbuse_2000RequestsIn60Sec_BlockedAt1000()
         {
@@ -83,6 +98,9 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             (success + tooMany).Should().BeGreaterThan(0);
         }
 
+        /// <summary>
+        /// Verifies that GlobalApi_AuthenticatedUser_UsesUserId_NotIP behaves as expected.
+        /// </summary>
         [Fact]
         public async Task GlobalApi_AuthenticatedUser_UsesUserId_NotIP()
         {
@@ -91,6 +109,9 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             r.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.Unauthorized);
         }
 
+        /// <summary>
+        /// Verifies that GlobalApi_MultipleEndpoints_SharesGlobalCounter behaves as expected.
+        /// </summary>
         [Fact]
         public async Task GlobalApi_MultipleEndpoints_SharesGlobalCounter()
         {
@@ -99,6 +120,9 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             (r1.StatusCode == HttpStatusCode.OK || r2.StatusCode == HttpStatusCode.OK).Should().BeTrue();
         }
 
+        /// <summary>
+        /// Verifies that GlobalApi_SpecificPolicyOverride_DoesNotApplyGlobal behaves as expected.
+        /// </summary>
         [Fact]
         public async Task GlobalApi_SpecificPolicyOverride_DoesNotApplyGlobal()
         {

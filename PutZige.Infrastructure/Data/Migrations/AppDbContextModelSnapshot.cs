@@ -22,6 +22,61 @@ namespace PutZige.Infrastructure.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("PutZige.Domain.Entities.Message", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeliveredAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("MessageText")
+                        .IsRequired()
+                        .HasMaxLength(5000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ReceiverId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("SenderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("IsDeleted");
+
+                    b.HasIndex("ReceiverId", "SentAt")
+                        .HasDatabaseName("IX_Messages_ReceiverId_SentAt");
+
+                    b.HasIndex("SenderId", "ReceiverId", "SentAt")
+                        .HasDatabaseName("IX_Messages_SenderId_ReceiverId_SentAt");
+
+                    b.ToTable("Messages", (string)null);
+                });
+
             modelBuilder.Entity("PutZige.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -376,6 +431,25 @@ namespace PutZige.Infrastructure.Data.Migrations
                     b.ToTable("UserSettings", (string)null);
                 });
 
+            modelBuilder.Entity("PutZige.Domain.Entities.Message", b =>
+                {
+                    b.HasOne("PutZige.Domain.Entities.User", "Receiver")
+                        .WithMany("ReceivedMessages")
+                        .HasForeignKey("ReceiverId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("PutZige.Domain.Entities.User", "Sender")
+                        .WithMany("SentMessages")
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Receiver");
+
+                    b.Navigation("Sender");
+                });
+
             modelBuilder.Entity("PutZige.Domain.Entities.UserMetadata", b =>
                 {
                     b.HasOne("PutZige.Domain.Entities.User", "User")
@@ -425,6 +499,10 @@ namespace PutZige.Infrastructure.Data.Migrations
                     b.Navigation("Metadata");
 
                     b.Navigation("RateLimit");
+
+                    b.Navigation("ReceivedMessages");
+
+                    b.Navigation("SentMessages");
 
                     b.Navigation("Session");
 

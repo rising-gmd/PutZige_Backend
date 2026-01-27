@@ -43,6 +43,14 @@ Authentication endpoints implemented:
 - `POST /api/v1/auth/login` ? User login (returns access + refresh tokens)
 - `POST /api/v1/auth/refresh-token` ? Rotate refresh token and return new access token
 
+Messaging endpoints:
+- `POST /api/v1/messages` ? Send a message to another user (requires JWT)
+- `GET /api/v1/messages/conversation/{otherUserId}` ? Get conversation history with pagination (requires JWT)
+- `PATCH /api/v1/messages/{messageId}/read` ? Mark message as read (requires JWT)
+
+SignalR hub:
+- `/hubs/chat` - Real-time messaging hub (JWT via query string `?access_token=`). Methods: `SendMessage(receiverId, messageText)`. Events: `ReceiveMessage`, `MessageSent`.
+
 Controllers return `ApiResponse<T>` wrappers and validation errors use lowercase field names.
 
 ## Authentication and Authorization

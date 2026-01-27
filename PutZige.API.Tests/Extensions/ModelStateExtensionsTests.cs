@@ -18,7 +18,7 @@ namespace PutZige.API.Tests.Extensions
         [InlineData("x", "x")]
         [InlineData("", "")]
         [InlineData(null, "")]
-        public void ToCamelCaseField_ConvertsCorrectly(string input, string expected)
+        public void ToCamelCaseField_ConvertsCorrectly(string? input, string expected)
         {
             var result = ModelStateExtensions.ToCamelCaseField(input);
             Assert.Equal(expected, result);

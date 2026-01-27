@@ -1,5 +1,6 @@
 #nullable enable
 using FluentValidation;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,6 +15,8 @@ using System;
 using System.Linq;
 using PutZige.Application.Interfaces;
 using PutZige.Infrastructure.Services;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using PutZige.Application.Settings;
 using PutZige.Application.Validators;
 
@@ -63,6 +66,7 @@ public static class DependencyInjection
         // Register repositories and unit of work
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IMessageRepository, MessageRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         // JWT settings and token service
@@ -71,12 +75,19 @@ public static class DependencyInjection
 
         // Client info service (depends on IHttpContextAccessor which is provided by the host)
         services.AddScoped<IClientInfoService, ClientInfoService>();
+        // Ensure IHttpContextAccessor is available in non-web TFMs
+        services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+        // Current user service (depends on IHttpContextAccessor)
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
 
         // Hashing settings and service
         services.Configure<HashingSettings>(configuration.GetSection(HashingSettings.SectionName));
         services.AddSingleton<IValidator<HashingSettings>, HashingSettingsValidator>();
         services.AddSingleton<IValidateOptions<HashingSettings>, HashingSettingsOptionsValidator>();
         services.AddScoped<IHashingService, HashingService>();
+
+        // Connection mapping service used by SignalR hubs to avoid static state
+        services.AddSingleton<IConnectionMappingService, ConnectionMappingService>();
 
         return services;
     }

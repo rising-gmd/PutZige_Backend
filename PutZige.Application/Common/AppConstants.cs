@@ -13,5 +13,12 @@ namespace PutZige.Application.Common
             // Lockout duration in minutes
             public const int LockoutMinutes = 15;
         }
+
+        public static class Messaging
+        {
+            public const int MaxMessageLength = 4000;
+            public const int DefaultPageSize = 50;
+            public const int MaxPageSize = 100;
+        }
     }
 }
