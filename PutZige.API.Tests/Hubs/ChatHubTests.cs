@@ -19,7 +19,7 @@ public class ChatHubTests : Integration.IntegrationTestBase
 {
     private HubConnection CreateHubConnection(string? token)
     {
-        var url = new Uri(new Uri(Factory.Server.BaseAddress.ToString()), "hubs/chat");
+        var url = new Uri(new Uri(Factory.Server.BaseAddress.ToString()), TestApiEndpoints.ChatHub);
         var builder = new HubConnectionBuilder()
             .WithUrl(url.ToString(), options =>
             {
