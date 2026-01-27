@@ -28,17 +28,26 @@ public class MessageRepository : Repository<Message>, IMessageRepository
         var query = _dbSet.Where(m => (m.SenderId == userId && m.ReceiverId == otherUserId) || (m.SenderId == otherUserId && m.ReceiverId == userId))
                           .OrderByDescending(m => m.SentAt);
 
-        // Execute count and list sequentially to avoid concurrent usage of the DbContext which is not thread-safe.
         var totalCount = await query.CountAsync(ct).ConfigureAwait(false);
 
         var skip = (pageNumber - 1) * pageSize;
 
         var messages = await query
-            .Include(m => m.Sender)
-            .Include(m => m.Receiver)
-            .AsNoTracking()
             .Skip(skip)
             .Take(pageSize)
+            .Select(m => new Message
+            {
+                Id = m.Id,
+                SenderId = m.SenderId,
+                ReceiverId = m.ReceiverId,
+                MessageText = m.MessageText,
+                SentAt = m.SentAt,
+                DeliveredAt = m.DeliveredAt,
+                ReadAt = m.ReadAt,
+                CreatedAt = m.CreatedAt,
+                Sender = new User { Id = m.SenderId, Username = m.Sender != null ? m.Sender.Username : string.Empty },
+                Receiver = new User { Id = m.ReceiverId, Username = m.Receiver != null ? m.Receiver.Username : string.Empty }
+            })
             .ToListAsync(ct).ConfigureAwait(false);
 
         return (messages, totalCount);
