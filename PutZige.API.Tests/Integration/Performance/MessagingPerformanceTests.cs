@@ -58,7 +58,7 @@ namespace PutZige.API.Tests.Integration.Performance
 
             var sw = Stopwatch.StartNew();
 
-            var url = $"/api/v1/messages/conversation/{b}?pageNumber=1&pageSize=50";
+            var url = $"{PutZige.API.Tests.TestApiEndpoints.MessagesConversation}/{b}?pageNumber=1&pageSize=50";
             var req = new HttpRequestMessage(HttpMethod.Get, url);
             req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", a.ToString());
 
@@ -89,7 +89,7 @@ namespace PutZige.API.Tests.Integration.Performance
             var tasks = Enumerable.Range(0, 100).Select(i => Task.Run(async () =>
             {
                 var req = new SendMessageRequest(receiver, $"msg{i}");
-                var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/messages")
+                var request = new HttpRequestMessage(HttpMethod.Post, PutZige.API.Tests.TestApiEndpoints.Messages)
                 {
                     Content = JsonContent.Create(req, options: new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase })
                 };

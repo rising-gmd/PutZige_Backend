@@ -9,6 +9,7 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using PutZige.Application.DTOs.Messaging;
 using Xunit;
+using PutZige.API.Tests;
 
 namespace PutZige.API.Tests.Integration.Messaging;
 
@@ -43,7 +44,7 @@ public class MessagesControllerIntegrationTests : Integration.IntegrationTestBas
         var req = new SendMessageRequest(receiverId, "hi");
 
         // Act
-        var res = await Client.PostAsJsonAsync("/api/v1/messages", req);
+        var res = await Client.PostAsJsonAsync(TestApiEndpoints.Messages, req);
 
         // Assert: allow 401 or 400 depending on pipeline
         res.StatusCode.Should().BeOneOf(HttpStatusCode.Unauthorized, HttpStatusCode.BadRequest, HttpStatusCode.NotFound);
@@ -65,7 +66,7 @@ public class MessagesControllerIntegrationTests : Integration.IntegrationTestBas
         var req = new SendMessageRequest(nonExistent, "hello");
 
         // Act
-        var res = await Client.PostAsJsonAsync("/api/v1/messages", req);
+        var res = await Client.PostAsJsonAsync(TestApiEndpoints.Messages, req);
 
         // Assert: service may map to 404/400 or 401 if auth failed
         res.StatusCode.Should().BeOneOf(HttpStatusCode.NotFound, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized);
@@ -95,7 +96,7 @@ public class MessagesControllerIntegrationTests : Integration.IntegrationTestBas
         var req = new SendMessageRequest(receiverId, "persist this message");
 
         // Act
-        var res = await Client.PostAsJsonAsync("/api/v1/messages", req);
+        var res = await Client.PostAsJsonAsync(TestApiEndpoints.Messages, req);
         // Accept created or validation/auth failures
         res.StatusCode.Should().BeOneOf(HttpStatusCode.Created, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized);
 
@@ -134,7 +135,7 @@ public class MessagesControllerIntegrationTests : Integration.IntegrationTestBas
         Client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
         var req = new SendMessageRequest(receiverId, "schema test");
 
-        var res = await Client.PostAsJsonAsync("/api/v1/messages", req);
+        var res = await Client.PostAsJsonAsync(TestApiEndpoints.Messages, req);
         res.StatusCode.Should().BeOneOf(HttpStatusCode.Created, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized);
 
         if (res.StatusCode == HttpStatusCode.Created)
@@ -209,7 +210,7 @@ public class MessagesControllerIntegrationTests : Integration.IntegrationTestBas
         }
 
         Client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-        var res = await Client.GetAsync($"/api/v1/messages/conversation/{other}?pageNumber=2&pageSize=2");
+        var res = await Client.GetAsync($"{TestApiEndpoints.MessagesConversation}/{other}?pageNumber=2&pageSize=2");
         // Allow OK or auth failure
         res.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.BadRequest);
 
@@ -277,7 +278,7 @@ public class MessagesControllerIntegrationTests : Integration.IntegrationTestBas
         }
 
         Client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-        var res = await Client.GetAsync($"/api/v1/messages/conversation/{other}");
+        var res = await Client.GetAsync($"{TestApiEndpoints.MessagesConversation}/{other}");
         res.StatusCode.Should().Be(HttpStatusCode.OK);
         var payload = await res.Content.ReadFromJsonAsync<PutZige.Application.DTOs.Common.ApiResponse<PutZige.Application.DTOs.Messaging.ConversationHistoryResponse>>();
         payload.Should().NotBeNull();
@@ -291,7 +292,7 @@ public class MessagesControllerIntegrationTests : Integration.IntegrationTestBas
     [Fact]
     public async Task MarkAsRead_Unauthenticated_Returns401()
     {
-        var res = await Client.PatchAsync($"/api/v1/messages/{Guid.NewGuid()}/read", null);
+        var res = await Client.PatchAsync(string.Format(TestApiEndpoints.MessageRead, Guid.NewGuid()), null);
         res.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
@@ -621,7 +622,7 @@ public class MessagesControllerIntegrationTests : Integration.IntegrationTestBas
         }
 
         Client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-        var res = await Client.PatchAsync($"/api/v1/messages/{messageId}/read", null);
+        var res = await Client.PatchAsync(string.Format(TestApiEndpoints.MessageRead, messageId), null);
         res.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized);
 
         if (res.StatusCode == HttpStatusCode.OK)

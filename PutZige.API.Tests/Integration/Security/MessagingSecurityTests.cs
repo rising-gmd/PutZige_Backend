@@ -48,7 +48,7 @@ namespace PutZige.API.Tests.Integration.Security
             var client = CreateClient(withAuth: true);
             var payload = new { ReceiverId = Guid.NewGuid(), MessageText = "Robert'); DROP TABLE Messages;--" };
 
-            var resp = await client.PostAsJsonAsync("/api/v1/messages", payload, CancellationToken.None);
+            var resp = await client.PostAsJsonAsync(PutZige.API.Tests.TestApiEndpoints.Messages, payload, CancellationToken.None);
 
             resp.StatusCode.Should().NotBe(HttpStatusCode.InternalServerError);
         }
@@ -62,7 +62,7 @@ namespace PutZige.API.Tests.Integration.Security
             var client = CreateClient(withAuth: true);
             var payload = new { ReceiverId = Guid.NewGuid(), MessageText = "<script>alert('xss')</script>" };
 
-            var resp = await client.PostAsJsonAsync("/api/v1/messages", payload, CancellationToken.None);
+            var resp = await client.PostAsJsonAsync(PutZige.API.Tests.TestApiEndpoints.Messages, payload, CancellationToken.None);
             var content = await resp.Content.ReadAsStringAsync(CancellationToken.None);
 
             resp.StatusCode.Should().NotBe(HttpStatusCode.InternalServerError);
@@ -79,7 +79,7 @@ namespace PutZige.API.Tests.Integration.Security
             var longId = new string('a', 5000);
             var payload = new { ReceiverId = longId, MessageText = "hello" };
 
-            var resp = await client.PostAsJsonAsync("/api/v1/messages", payload, CancellationToken.None);
+            var resp = await client.PostAsJsonAsync(PutZige.API.Tests.TestApiEndpoints.Messages, payload, CancellationToken.None);
 
             resp.StatusCode.Should().NotBe(HttpStatusCode.InternalServerError);
         }
@@ -93,7 +93,7 @@ namespace PutZige.API.Tests.Integration.Security
             var client = CreateClient(withAuth: true);
             var messageId = Guid.NewGuid();
 
-            var resp = await client.PostAsync($"/api/v1/messages/{messageId}/mark-as-read", null, CancellationToken.None);
+            var resp = await client.PostAsync(string.Format(PutZige.API.Tests.TestApiEndpoints.MessageMarkAsRead, messageId), null, CancellationToken.None);
 
             resp.StatusCode.Should().BeOneOf(HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.Unauthorized);
         }
@@ -107,7 +107,7 @@ namespace PutZige.API.Tests.Integration.Security
             var client = CreateClient(withAuth: true);
             var otherUserId = Guid.NewGuid();
 
-            var resp = await client.GetAsync($"/api/v1/messages/conversation/{otherUserId}", CancellationToken.None);
+            var resp = await client.GetAsync($"{PutZige.API.Tests.TestApiEndpoints.MessagesConversation}/{otherUserId}", CancellationToken.None);
 
             resp.StatusCode.Should().NotBe(HttpStatusCode.InternalServerError);
         }
@@ -120,7 +120,7 @@ namespace PutZige.API.Tests.Integration.Security
         {
             var client = CreateClient(withAuth: false);
 
-            var resp = await client.GetAsync("/hubs/chat", CancellationToken.None);
+            var resp = await client.GetAsync(PutZige.API.Tests.TestApiEndpoints.ChatHub, CancellationToken.None);
 
             resp.StatusCode.Should().NotBe(HttpStatusCode.InternalServerError);
         }
@@ -132,7 +132,7 @@ namespace PutZige.API.Tests.Integration.Security
         public async Task Hub_XssInMessage_Sanitized()
         {
             var client = CreateClient(withAuth: false);
-            var resp = await client.GetAsync("/hubs/chat", CancellationToken.None);
+            var resp = await client.GetAsync(PutZige.API.Tests.TestApiEndpoints.ChatHub, CancellationToken.None);
             resp.StatusCode.Should().NotBe(HttpStatusCode.InternalServerError);
         }
 
@@ -144,7 +144,7 @@ namespace PutZige.API.Tests.Integration.Security
         {
             var client = CreateClient(withAuth: false);
 
-            var endpoints = new[] { "/api/v1/messages", "/hubs/chat" };
+            var endpoints = new[] { PutZige.API.Tests.TestApiEndpoints.Messages, PutZige.API.Tests.TestApiEndpoints.ChatHub };
             foreach (var ep in endpoints)
             {
                 var r = await client.GetAsync(ep, CancellationToken.None);
@@ -161,7 +161,7 @@ namespace PutZige.API.Tests.Integration.Security
             var client = CreateClient(withAuth: false);
             client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "invalid-token");
 
-            var r = await client.GetAsync("/api/v1/messages", CancellationToken.None);
+            var r = await client.GetAsync(PutZige.API.Tests.TestApiEndpoints.Messages, CancellationToken.None);
             r.StatusCode.Should().BeOneOf(HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.MethodNotAllowed);
         }
 
@@ -172,7 +172,7 @@ namespace PutZige.API.Tests.Integration.Security
         public async Task NoJwt_AllEndpoints_Returns401()
         {
             var client = CreateClient(withAuth: false);
-            var r = await client.GetAsync("/api/v1/messages", CancellationToken.None);
+            var r = await client.GetAsync(PutZige.API.Tests.TestApiEndpoints.Messages, CancellationToken.None);
             r.StatusCode.Should().BeOneOf(HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.MethodNotAllowed);
         }
 
@@ -186,7 +186,7 @@ namespace PutZige.API.Tests.Integration.Security
             var text = new string('x', 4000);
             var payload = new { ReceiverId = Guid.NewGuid(), MessageText = text };
 
-            var resp = await client.PostAsJsonAsync("/api/v1/messages", payload, CancellationToken.None);
+            var resp = await client.PostAsJsonAsync(PutZige.API.Tests.TestApiEndpoints.Messages, payload, CancellationToken.None);
             resp.StatusCode.Should().NotBe(HttpStatusCode.InternalServerError);
         }
 
@@ -200,7 +200,7 @@ namespace PutZige.API.Tests.Integration.Security
             var text = new string('x', 4001);
             var payload = new { ReceiverId = Guid.NewGuid(), MessageText = text };
 
-            var resp = await client.PostAsJsonAsync("/api/v1/messages", payload, CancellationToken.None);
+            var resp = await client.PostAsJsonAsync(PutZige.API.Tests.TestApiEndpoints.Messages, payload, CancellationToken.None);
             resp.StatusCode.Should().BeOneOf(HttpStatusCode.BadRequest, HttpStatusCode.RequestEntityTooLarge, HttpStatusCode.UnsupportedMediaType, HttpStatusCode.InternalServerError);
         }
 
@@ -211,7 +211,7 @@ namespace PutZige.API.Tests.Integration.Security
         public async Task RateLimit_LoginExceeded_MessagingStillWorks()
         {
             var client = CreateClient(withAuth: true);
-            var resp = await client.GetAsync("/api/v1/messages", CancellationToken.None);
+            var resp = await client.GetAsync(PutZige.API.Tests.TestApiEndpoints.Messages, CancellationToken.None);
             resp.StatusCode.Should().NotBe(HttpStatusCode.InternalServerError);
         }
 
@@ -225,7 +225,7 @@ namespace PutZige.API.Tests.Integration.Security
 
             for (var i = 0; i < 10; i++)
             {
-                var r = await client.GetAsync("/api/v1/messages", CancellationToken.None);
+            var r = await client.GetAsync(PutZige.API.Tests.TestApiEndpoints.Messages, CancellationToken.None);
                 r.StatusCode.Should().NotBe(HttpStatusCode.InternalServerError);
             }
         }
@@ -238,7 +238,7 @@ namespace PutZige.API.Tests.Integration.Security
         {
             var client = CreateClient(withAuth: true);
             var otherMessageId = Guid.NewGuid();
-            var r = await client.GetAsync($"/api/v1/messages/{otherMessageId}", CancellationToken.None);
+            var r = await client.GetAsync(string.Format(PutZige.API.Tests.TestApiEndpoints.MessageById, otherMessageId), CancellationToken.None);
             r.StatusCode.Should().BeOneOf(HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.Unauthorized);
         }
     }

@@ -39,16 +39,21 @@ public class MessagingService : IMessagingService
     public async Task<SendMessageResponse> SendMessageAsync(Guid senderId, Guid receiverId, string messageText, CancellationToken ct = default)
     {
         if (senderId == Guid.Empty) throw new ArgumentException(ErrorMessages.Messaging.SenderIdRequired, nameof(senderId));
+
         if (receiverId == Guid.Empty) throw new ArgumentException(ErrorMessages.Messaging.ReceiverIdRequired, nameof(receiverId));
+
         if (string.IsNullOrWhiteSpace(messageText)) throw new ArgumentException(ErrorMessages.Messaging.MessageTextRequired, nameof(messageText));
+
         if (messageText.Length > AppConstants.Messaging.MaxMessageLength) throw new ArgumentException(ErrorMessages.Messaging.MessageTooLong, nameof(messageText));
 
         // Validate sender exists
         var sender = await _userRepository.GetByIdAsync(senderId, ct);
+
         if (sender == null) throw new KeyNotFoundException(ErrorMessages.Messaging.SenderNotFound);
 
         // Validate receiver exists
         var receiver = await _userRepository.GetByIdAsync(receiverId, ct);
+
         if (receiver == null) throw new KeyNotFoundException(ErrorMessages.Messaging.ReceiverNotFound);
 
         var message = new Message
@@ -60,6 +65,7 @@ public class MessagingService : IMessagingService
         };
 
         await _messageRepository.AddAsync(message, ct);
+
         await _unitOfWork.SaveChangesAsync(ct);
 
         _logger?.LogInformation("Message sent - MessageId: {MessageId} SenderId: {SenderId} ReceiverId: {ReceiverId}", message.Id, senderId, receiverId);
