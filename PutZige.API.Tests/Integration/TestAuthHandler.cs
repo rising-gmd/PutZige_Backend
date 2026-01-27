@@ -2,7 +2,9 @@
 using System;
 using System.Linq;
 using System.Security.Claims;
+using System.Text;
 using System.Text.Encodings.Web;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
@@ -71,9 +73,21 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
                     }
                     else
                     {
-                        // Fallback: treat as raw sub claim
-                        claimsList.Add(new Claim("sub", token));
-                        claimsList.Add(new Claim(ClaimTypes.NameIdentifier, token));
+                        // Fallback: produce a deterministic GUID from the raw token so tests using
+                        // non-GUID tokens still yield a stable, parseable user id across requests.
+                        var tokenBytes = Encoding.UTF8.GetBytes(token ?? string.Empty);
+                        byte[] hashBytes;
+                        using (var md5 = MD5.Create())
+                        {
+                            hashBytes = md5.ComputeHash(tokenBytes);
+                        }
+
+                        // Ensure we have 16 bytes for a GUID (MD5 produces 16 bytes)
+                        var derivedId = new Guid(hashBytes);
+
+                        claimsList.Add(new Claim("sub", derivedId.ToString()));
+                        claimsList.Add(new Claim(ClaimTypes.NameIdentifier, derivedId.ToString()));
+                        claimsList.Add(new Claim(ClaimTypes.Name, $"TestUser_{derivedId}"));
                     }
                 }
             }

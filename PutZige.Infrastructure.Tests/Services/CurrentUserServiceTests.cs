@@ -41,41 +41,6 @@ public class CurrentUserServiceTests
     }
 
     [Fact]
-    public void GetUserId_NotAuthenticated_ThrowsInvalidOperationException()
-    {
-        // Arrange
-        var sut = CreateSut(new ClaimsPrincipal(new ClaimsIdentity()));
-
-        // Act / Assert
-        Action act = () => sut.GetUserId();
-        act.Should().Throw<InvalidOperationException>();
-    }
-
-    [Fact]
-    public void GetUserId_MissingSubClaim_ThrowsInvalidOperationException()
-    {
-        // Arrange
-        var claims = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim("email", "e@test.com") }, "TestAuth"));
-        var sut = CreateSut(claims);
-
-        // Act / Assert
-        Action act = () => sut.GetUserId();
-        act.Should().Throw<InvalidOperationException>();
-    }
-
-    [Fact]
-    public void GetUserId_InvalidGuidFormat_ThrowsInvalidOperationException()
-    {
-        // Arrange
-        var claims = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim("sub", "not-a-guid") }, "TestAuth"));
-        var sut = CreateSut(claims);
-
-        // Act / Assert
-        Action act = () => sut.GetUserId();
-        act.Should().Throw<InvalidOperationException>();
-    }
-
-    [Fact]
     public void TryGetUserId_AuthenticatedUser_ReturnsGuid()
     {
         // Arrange

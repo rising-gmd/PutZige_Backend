@@ -25,7 +25,7 @@ public sealed class CurrentUserService : ICurrentUserService
     public Guid GetUserId()
     {
         if (!IsAuthenticated())
-            throw new InvalidOperationException(ErrorMessages.General.UnauthorizedAccess);
+            throw new UnauthorizedAccessException(ErrorMessages.General.UnauthorizedAccess);
 
         // Try "sub" first, then ClaimTypes.NameIdentifier as fallback
         var claim = _httpContextAccessor.HttpContext?.User?.FindFirst("sub")?.Value
@@ -34,13 +34,13 @@ public sealed class CurrentUserService : ICurrentUserService
         if (string.IsNullOrWhiteSpace(claim))
         {
             _logger?.LogError("Missing sub claim for authenticated user");
-            throw new InvalidOperationException(ErrorMessages.General.UnauthorizedAccess);
+            throw new UnauthorizedAccessException(ErrorMessages.General.UnauthorizedAccess);
         }
 
         if (!Guid.TryParse(claim, out var id))
         {
             _logger?.LogError("Invalid user ID claim format: {Claim}", claim);
-            throw new InvalidOperationException(ErrorMessages.General.UnauthorizedAccess);
+            throw new UnauthorizedAccessException(ErrorMessages.General.UnauthorizedAccess);
         }
 
         return id;
