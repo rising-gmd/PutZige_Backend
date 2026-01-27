@@ -77,6 +77,7 @@ namespace PutZige.Application.Common.Messages
             public const string MessageTextRequired = "messageText is required";
             public const string PageNumberOutOfRange = "pageNumber must be greater than zero";
             public const string PageSizeOutOfRange = "pageSize must be between 1 and the configured maximum";
+            public const string SenderNotFound = "Sender not found";
         }
     }
 }

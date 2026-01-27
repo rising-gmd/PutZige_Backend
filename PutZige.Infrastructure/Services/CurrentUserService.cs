@@ -22,13 +22,15 @@ public sealed class CurrentUserService : ICurrentUserService
         _logger = logger;
     }
 
-    /// <inheritdoc />
     public Guid GetUserId()
     {
         if (!IsAuthenticated())
             throw new InvalidOperationException(ErrorMessages.General.UnauthorizedAccess);
 
-        var claim = _httpContextAccessor.HttpContext?.User?.FindFirst("sub")?.Value;
+        // Try "sub" first, then ClaimTypes.NameIdentifier as fallback
+        var claim = _httpContextAccessor.HttpContext?.User?.FindFirst("sub")?.Value
+                 ?? _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
         if (string.IsNullOrWhiteSpace(claim))
         {
             _logger?.LogError("Missing sub claim for authenticated user");
@@ -44,13 +46,15 @@ public sealed class CurrentUserService : ICurrentUserService
         return id;
     }
 
-    /// <inheritdoc />
     public Guid? TryGetUserId()
     {
         if (!IsAuthenticated())
             return null;
 
-        var claim = _httpContextAccessor.HttpContext?.User?.FindFirst("sub")?.Value;
+        // Same fallback logic
+        var claim = _httpContextAccessor.HttpContext?.User?.FindFirst("sub")?.Value
+                 ?? _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
         if (string.IsNullOrWhiteSpace(claim))
             return null;
 

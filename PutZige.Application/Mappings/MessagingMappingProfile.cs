@@ -13,10 +13,6 @@ public class MessagingMappingProfile : Profile
             .ForMember(d => d.ReceiverUsername, opt => opt.MapFrom(s => s.Receiver != null ? s.Receiver.Username : string.Empty));
 
         CreateMap<Message, SendMessageResponse>()
-            .ForMember(d => d.MessageId, opt => opt.MapFrom(s => s.Id))
-            .ForMember(d => d.SenderId, opt => opt.MapFrom(s => s.SenderId))
-            .ForMember(d => d.ReceiverId, opt => opt.MapFrom(s => s.ReceiverId))
-            .ForMember(d => d.MessageText, opt => opt.MapFrom(s => s.MessageText))
-            .ForMember(d => d.SentAt, opt => opt.MapFrom(s => s.SentAt));
+            .ConstructUsing(s => new SendMessageResponse(s.Id, s.SenderId, s.ReceiverId, s.MessageText, s.SentAt));
     }
 }

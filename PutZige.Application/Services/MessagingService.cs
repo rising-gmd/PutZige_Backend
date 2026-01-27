@@ -43,6 +43,11 @@ public class MessagingService : IMessagingService
         if (string.IsNullOrWhiteSpace(messageText)) throw new ArgumentException(ErrorMessages.Messaging.MessageTextRequired, nameof(messageText));
         if (messageText.Length > AppConstants.Messaging.MaxMessageLength) throw new ArgumentException(ErrorMessages.Messaging.MessageTooLong, nameof(messageText));
 
+        // Validate sender exists
+        var sender = await _userRepository.GetByIdAsync(senderId, ct);
+        if (sender == null) throw new KeyNotFoundException(ErrorMessages.Messaging.SenderNotFound);
+
+        // Validate receiver exists
         var receiver = await _userRepository.GetByIdAsync(receiverId, ct);
         if (receiver == null) throw new KeyNotFoundException(ErrorMessages.Messaging.ReceiverNotFound);
 

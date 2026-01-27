@@ -38,6 +38,11 @@ public partial class MessagingServiceTests
         _mockMapper.Setup(m => m.Map<SendMessageResponse>(It.IsAny<Message>())).Returns((Message msg) => new SendMessageResponse(msg.Id, msg.SenderId, msg.ReceiverId, msg.MessageText, msg.SentAt));
         _mockMapper.Setup(m => m.Map<MessageDto>(It.IsAny<Message>())).Returns((Message msg) => new MessageDto { Id = msg.Id, MessageText = msg.MessageText, SenderId = msg.SenderId, ReceiverId = msg.ReceiverId, SentAt = msg.SentAt });
 
+        // Default behavior: return a non-null user for any id unless a test overrides this setup
+        _mockUserRepo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync((Guid id, CancellationToken _) => new Domain.Entities.User { Id = id });
+        // Also setup the overload that accepts include expressions to avoid Moq overload resolution mismatches
+        _mockUserRepo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>(), It.IsAny<System.Linq.Expressions.Expression<Func<Domain.Entities.User, object>>[]>())).ReturnsAsync((Guid id, CancellationToken _, System.Linq.Expressions.Expression<Func<Domain.Entities.User, object>>[] __) => new Domain.Entities.User { Id = id });
+
         _sut = new MessagingService(_mockMessageRepo.Object, _mockUserRepo.Object, _mockUow.Object, _mockMapper.Object, _mockLogger.Object);
     }
 
@@ -142,6 +147,7 @@ public partial class MessagingServiceTests
         // Arrange
         var sender = Guid.NewGuid();
         var receiver = Guid.NewGuid();
+        _mockUserRepo.Setup(r => r.GetByIdAsync(sender, It.IsAny<CancellationToken>())).ReturnsAsync(new Domain.Entities.User { Id = sender });
         _mockUserRepo.Setup(r => r.GetByIdAsync(receiver, It.IsAny<CancellationToken>())).ReturnsAsync(new Domain.Entities.User { Id = receiver });
         _mockMessageRepo.Setup(r => r.AddAsync(It.IsAny<Message>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         _mockUow.Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
@@ -160,6 +166,7 @@ public partial class MessagingServiceTests
         // Arrange
         var sender = Guid.NewGuid();
         var receiver = Guid.NewGuid();
+        _mockUserRepo.Setup(r => r.GetByIdAsync(sender, It.IsAny<CancellationToken>())).ReturnsAsync(new Domain.Entities.User { Id = sender });
         _mockUserRepo.Setup(r => r.GetByIdAsync(receiver, It.IsAny<CancellationToken>())).ReturnsAsync(new Domain.Entities.User { Id = receiver });
         _mockMessageRepo.Setup(r => r.AddAsync(It.IsAny<Message>(), It.IsAny<CancellationToken>())).ThrowsAsync(new InvalidOperationException("db"));
 
@@ -177,6 +184,7 @@ public partial class MessagingServiceTests
         var sender = Guid.NewGuid();
         var receiver = Guid.NewGuid();
         DateTime before = DateTime.UtcNow;
+        _mockUserRepo.Setup(r => r.GetByIdAsync(sender, It.IsAny<CancellationToken>())).ReturnsAsync(new Domain.Entities.User { Id = sender });
         _mockUserRepo.Setup(r => r.GetByIdAsync(receiver, It.IsAny<CancellationToken>())).ReturnsAsync(new Domain.Entities.User { Id = receiver });
         Message? captured = null;
         _mockMessageRepo.Setup(r => r.AddAsync(It.IsAny<Message>(), It.IsAny<CancellationToken>())).Callback<Message, CancellationToken>((m, ct) => captured = m).Returns(Task.CompletedTask);
@@ -196,6 +204,7 @@ public partial class MessagingServiceTests
         // Arrange
         var sender = Guid.NewGuid();
         var receiver = Guid.NewGuid();
+        _mockUserRepo.Setup(r => r.GetByIdAsync(sender, It.IsAny<CancellationToken>())).ReturnsAsync(new Domain.Entities.User { Id = sender });
         _mockUserRepo.Setup(r => r.GetByIdAsync(receiver, It.IsAny<CancellationToken>())).ReturnsAsync(new Domain.Entities.User { Id = receiver });
         Message? captured = null;
         _mockMessageRepo.Setup(r => r.AddAsync(It.IsAny<Message>(), It.IsAny<CancellationToken>())).Callback<Message, CancellationToken>((m, ct) => captured = m).Returns(Task.CompletedTask);

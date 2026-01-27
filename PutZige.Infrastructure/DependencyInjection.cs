@@ -86,6 +86,9 @@ public static class DependencyInjection
         services.AddSingleton<IValidateOptions<HashingSettings>, HashingSettingsOptionsValidator>();
         services.AddScoped<IHashingService, HashingService>();
 
+        // Connection mapping service used by SignalR hubs to avoid static state
+        services.AddSingleton<IConnectionMappingService, ConnectionMappingService>();
+
         return services;
     }
 }

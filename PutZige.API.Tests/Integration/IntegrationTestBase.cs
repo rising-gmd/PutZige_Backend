@@ -4,7 +4,6 @@ using System;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc.Testing;
 using System.Net.Http;
-using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using PutZige.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +12,7 @@ using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Authentication;
 
 namespace PutZige.API.Tests.Integration
 {
@@ -81,7 +81,6 @@ namespace PutZige.API.Tests.Integration
                         });
 
                         // Ensure a named policy required by controllers exists in test environment
-                        // Some controllers use "api-general" policy name; provide a no-op bypass policy for tests
                         services.PostConfigure<RateLimiterOptions>(opts =>
                         {
                             try
@@ -94,15 +93,26 @@ namespace PutZige.API.Tests.Integration
                             }
                         });
 
-                        // Add a test authentication scheme that accepts a simple bearer token or JWT for tests.
-                        services.AddAuthentication().AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, PutZige.API.Tests.Integration.TestAuthHandler>("Test", _ => { });
+                        // Remove existing authentication to ensure test auth is primary
+                        var authDescriptors = services
+                            .Where(d => d.ServiceType != null &&
+                                       (d.ServiceType == typeof(IAuthenticationService) ||
+                                        d.ServiceType.Name.Contains("Authentication")))
+                            .ToList();
 
-                        // Ensure the test scheme is the default so the app's JwtBearer doesn't override it in tests
-                        services.PostConfigure<Microsoft.AspNetCore.Authentication.AuthenticationOptions>(opts =>
+                        foreach (var descriptor in authDescriptors)
                         {
-                            opts.DefaultAuthenticateScheme = "Test";
-                            opts.DefaultChallengeScheme = "Test";
-                        });
+                            try { services.Remove(descriptor); } catch { }
+                        }
+
+                        // Add test authentication as PRIMARY scheme
+                        services.AddAuthentication(options =>
+                        {
+                            options.DefaultAuthenticateScheme = "Test";
+                            options.DefaultChallengeScheme = "Test";
+                            options.DefaultScheme = "Test";
+                        })
+                        .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", _ => { });
                     });
                 });
 
