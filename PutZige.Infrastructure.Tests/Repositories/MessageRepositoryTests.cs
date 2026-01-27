@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -48,6 +48,9 @@ public class MessageRepositoryTests : DatabaseTestBase
         };
     }
 
+    /// <summary>
+    /// Verifies that GetConversationAsync_TwoUsers_ReturnsMessagesInDescendingOrder behaves as expected.
+    /// </summary>
     [Fact]
     public async Task GetConversationAsync_TwoUsers_ReturnsMessagesInDescendingOrder()
     {
@@ -73,6 +76,9 @@ public class MessageRepositoryTests : DatabaseTestBase
         messages.First().SentAt.Should().BeAfter(messages.Last().SentAt);
     }
 
+    /// <summary>
+    /// Verifies that GetConversationAsync_WithPagination_ReturnsCorrectPage behaves as expected.
+    /// </summary>
     [Fact]
     public async Task GetConversationAsync_WithPagination_ReturnsCorrectPage()
     {
@@ -104,6 +110,9 @@ public class MessageRepositoryTests : DatabaseTestBase
         page1.First().SentAt.Should().BeAfter(page2.First().SentAt);
     }
 
+    /// <summary>
+    /// Verifies that GetConversationAsync_FirstPage_SkipsZero behaves as expected.
+    /// </summary>
     [Fact]
     public async Task GetConversationAsync_FirstPage_SkipsZero()
     {
@@ -135,6 +144,9 @@ public class MessageRepositoryTests : DatabaseTestBase
         messages.Should().Contain(m => m.MessageText == "first");
     }
 
+    /// <summary>
+    /// Verifies that GetConversationAsync_LastPage_ReturnsRemainingMessages behaves as expected.
+    /// </summary>
     [Fact]
     public async Task GetConversationAsync_LastPage_ReturnsRemainingMessages()
     {
@@ -168,6 +180,9 @@ public class MessageRepositoryTests : DatabaseTestBase
         page.Should().HaveCount(2);
     }
 
+    /// <summary>
+    /// Verifies that GetConversationAsync_PageBeyondTotal_ReturnsEmptyList behaves as expected.
+    /// </summary>
     [Fact]
     public async Task GetConversationAsync_PageBeyondTotal_ReturnsEmptyList()
     {
@@ -186,6 +201,9 @@ public class MessageRepositoryTests : DatabaseTestBase
         page.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// Verifies that GetConversationAsync_NoMessages_ReturnsEmptyListAndZeroCount behaves as expected.
+    /// </summary>
     [Fact]
     public async Task GetConversationAsync_NoMessages_ReturnsEmptyListAndZeroCount()
     {
@@ -205,6 +223,9 @@ public class MessageRepositoryTests : DatabaseTestBase
         page.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// Verifies that GetConversationAsync_DeletedMessages_ExcludedFromResults behaves as expected.
+    /// </summary>
     [Fact]
     public async Task GetConversationAsync_DeletedMessages_ExcludedFromResults()
     {
@@ -225,6 +246,9 @@ public class MessageRepositoryTests : DatabaseTestBase
         total.Should().Be(0);
     }
 
+    /// <summary>
+    /// Verifies that GetConversationAsync_BidirectionalConversation_IncludesBothDirections behaves as expected.
+    /// </summary>
     [Fact]
     public async Task GetConversationAsync_BidirectionalConversation_IncludesBothDirections()
     {
@@ -246,6 +270,9 @@ public class MessageRepositoryTests : DatabaseTestBase
         page.Select(m => m.MessageText).Should().Contain(new[] { "a->b", "b->a" });
     }
 
+    /// <summary>
+    /// Verifies that GetConversationAsync_LargeDataset_100Messages_Paginated behaves as expected.
+    /// </summary>
     [Fact]
     public async Task GetConversationAsync_LargeDataset_100Messages_Paginated()
     {
@@ -272,6 +299,9 @@ public class MessageRepositoryTests : DatabaseTestBase
         page.Should().HaveCount(50);
     }
 
+    /// <summary>
+    /// Verifies that AddAsync_ValidMessage_SavesSuccessfully behaves as expected.
+    /// </summary>
     [Fact]
     public async Task AddAsync_ValidMessage_SavesSuccessfully()
     {
@@ -288,6 +318,9 @@ public class MessageRepositoryTests : DatabaseTestBase
         stored!.MessageText.Should().Be("add");
     }
 
+    /// <summary>
+    /// Verifies that UpdateAsync_ExistingMessage_UpdatesTimestamps behaves as expected.
+    /// </summary>
     [Fact]
     public async Task UpdateAsync_ExistingMessage_UpdatesTimestamps()
     {
@@ -309,6 +342,9 @@ public class MessageRepositoryTests : DatabaseTestBase
         stored.UpdatedAt.Should().NotBeNull();
     }
 
+    /// <summary>
+    /// Verifies that GetByIdAsync_ExistingMessage_ReturnsMessage behaves as expected.
+    /// </summary>
     [Fact]
     public async Task GetByIdAsync_ExistingMessage_ReturnsMessage()
     {
@@ -325,6 +361,9 @@ public class MessageRepositoryTests : DatabaseTestBase
         got!.Id.Should().Be(m.Id);
     }
 
+    /// <summary>
+    /// Verifies that GetByIdAsync_DeletedMessage_ReturnsNull behaves as expected.
+    /// </summary>
     [Fact]
     public async Task GetByIdAsync_DeletedMessage_ReturnsNull()
     {
@@ -345,6 +384,9 @@ public class MessageRepositoryTests : DatabaseTestBase
         got.Should().BeNull();
     }
 
+    /// <summary>
+    /// Verifies that GetByIdAsync_NonExistent_ReturnsNull behaves as expected.
+    /// </summary>
     [Fact]
     public async Task GetByIdAsync_NonExistent_ReturnsNull()
     {
@@ -355,6 +397,9 @@ public class MessageRepositoryTests : DatabaseTestBase
         got.Should().BeNull();
     }
 
+    /// <summary>
+    /// Verifies that GetConversationAsync_OrderByNewest_VerifiesDescending behaves as expected.
+    /// </summary>
     [Fact]
     public async Task GetConversationAsync_OrderByNewest_VerifiesDescending()
     {

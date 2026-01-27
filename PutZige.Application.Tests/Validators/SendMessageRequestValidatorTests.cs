@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using System;
 using FluentAssertions;
 using PutZige.Application.DTOs.Messaging;
@@ -11,6 +11,9 @@ public class SendMessageRequestValidatorTests
 {
     private readonly SendMessageRequestValidator _validator = new SendMessageRequestValidator();
 
+    /// <summary>
+    /// Verifies that Validator_ValidRequest_Passes behaves as expected.
+    /// </summary>
     [Fact]
     public void Validator_ValidRequest_Passes()
     {
@@ -19,6 +22,9 @@ public class SendMessageRequestValidatorTests
         res.IsValid.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Verifies that Validator_ReceiverIdEmpty_Fails behaves as expected.
+    /// </summary>
     [Fact]
     public void Validator_ReceiverIdEmpty_Fails()
     {
@@ -27,6 +33,9 @@ public class SendMessageRequestValidatorTests
         res.IsValid.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Verifies that Validator_MessageTextEmpty_Fails behaves as expected.
+    /// </summary>
     [Fact]
     public void Validator_MessageTextEmpty_Fails()
     {
@@ -35,6 +44,9 @@ public class SendMessageRequestValidatorTests
         res.IsValid.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Verifies that Validator_MessageTextNull_Fails behaves as expected.
+    /// </summary>
     [Fact]
     public void Validator_MessageTextNull_Fails()
     {
@@ -44,6 +56,9 @@ public class SendMessageRequestValidatorTests
         res.IsValid.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Verifies that Validator_MessageTextExceedsMaxLength_Fails behaves as expected.
+    /// </summary>
     [Fact]
     public void Validator_MessageTextExceedsMaxLength_Fails()
     {
@@ -53,6 +68,9 @@ public class SendMessageRequestValidatorTests
         res.IsValid.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Verifies that Validator_MessageTextWhitespaceOnly_Fails behaves as expected.
+    /// </summary>
     [Fact]
     public void Validator_MessageTextWhitespaceOnly_Fails()
     {
@@ -61,6 +79,9 @@ public class SendMessageRequestValidatorTests
         res.IsValid.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Verifies that Validator_MessageTextExactlyMaxLength_Passes behaves as expected.
+    /// </summary>
     [Fact]
     public void Validator_MessageTextExactlyMaxLength_Passes()
     {

@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using System;
 using System.Linq;
 using System.Threading;
@@ -12,6 +12,9 @@ namespace PutZige.Application.Tests.Services;
 
 public partial class MessagingServiceTests
 {
+    /// <summary>
+    /// Verifies that MarkMessageAsDelivered_AlreadyDelivered_UpdatesTimestamp behaves as expected.
+    /// </summary>
     [Fact]
     public async Task MarkMessageAsDelivered_AlreadyDelivered_UpdatesTimestamp()
     {
@@ -28,6 +31,9 @@ public partial class MessagingServiceTests
         _mockMessageRepo.Verify(r => r.UpdateAsync(It.Is<Message>(x => x.DeliveredAt != null && x.DeliveredAt > DateTime.UtcNow.AddMinutes(-6)), It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    /// <summary>
+    /// Verifies that MarkMessageAsDelivered_DeletedMessage_ThrowsKeyNotFoundException behaves as expected.
+    /// </summary>
     [Fact]
     public async Task MarkMessageAsDelivered_DeletedMessage_ThrowsKeyNotFoundException()
     {
@@ -43,6 +49,9 @@ public partial class MessagingServiceTests
         await act.Should().ThrowAsync<KeyNotFoundException>();
     }
 
+    /// <summary>
+    /// Verifies that MarkMessageAsDelivered_SetsUtcNow behaves as expected.
+    /// </summary>
     [Fact]
     public async Task MarkMessageAsDelivered_SetsUtcNow()
     {
@@ -59,6 +68,9 @@ public partial class MessagingServiceTests
         _mockMessageRepo.Verify(r => r.UpdateAsync(It.Is<Message>(x => x.DeliveredAt != null && x.DeliveredAt >= before), It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    /// <summary>
+    /// Verifies that MarkMessageAsRead_ValidMessage_SetsReadAt behaves as expected.
+    /// </summary>
     [Fact]
     public async Task MarkMessageAsRead_ValidMessage_SetsReadAt()
     {
@@ -74,6 +86,9 @@ public partial class MessagingServiceTests
         _mockMessageRepo.Verify(r => r.UpdateAsync(It.Is<Message>(x => x.ReadAt != null), It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    /// <summary>
+    /// Verifies that MarkMessageAsRead_MessageNotFound_ThrowsKeyNotFoundException behaves as expected.
+    /// </summary>
     [Fact]
     public async Task MarkMessageAsRead_MessageNotFound_ThrowsKeyNotFoundException()
     {
@@ -87,6 +102,9 @@ public partial class MessagingServiceTests
         await act.Should().ThrowAsync<KeyNotFoundException>();
     }
 
+    /// <summary>
+    /// Verifies that MarkMessageAsRead_AlreadyRead_UpdatesTimestamp behaves as expected.
+    /// </summary>
     [Fact]
     public async Task MarkMessageAsRead_AlreadyRead_UpdatesTimestamp()
     {
@@ -103,6 +121,9 @@ public partial class MessagingServiceTests
         _mockMessageRepo.Verify(r => r.UpdateAsync(It.Is<Message>(x => x.ReadAt != null && x.ReadAt > DateTime.UtcNow.AddMinutes(-6)), It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    /// <summary>
+    /// Verifies that MarkMessageAsRead_UnauthorizedUser_ThrowsUnauthorizedAccessException behaves as expected.
+    /// </summary>
     [Fact]
     public async Task MarkMessageAsRead_UnauthorizedUser_ThrowsUnauthorizedAccessException()
     {
@@ -119,6 +140,9 @@ public partial class MessagingServiceTests
         _mockMessageRepo.Verify(r => r.UpdateAsync(It.Is<Message>(x => x.ReadAt != null), It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    /// <summary>
+    /// Verifies that MarkMessageAsRead_SetsUtcNow behaves as expected.
+    /// </summary>
     [Fact]
     public async Task MarkMessageAsRead_SetsUtcNow()
     {
@@ -135,6 +159,9 @@ public partial class MessagingServiceTests
         _mockMessageRepo.Verify(r => r.UpdateAsync(It.Is<Message>(x => x.ReadAt != null && x.ReadAt >= before), It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    /// <summary>
+    /// Verifies that MarkMessageAsRead_DeletedMessage_ThrowsKeyNotFoundException behaves as expected.
+    /// </summary>
     [Fact]
     public async Task MarkMessageAsRead_DeletedMessage_ThrowsKeyNotFoundException()
     {

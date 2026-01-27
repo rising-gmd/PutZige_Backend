@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using System.Linq;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +11,9 @@ namespace PutZige.Infrastructure.Tests.Data
 {
     public class MessageEntityConfigurationTests
     {
+        /// <summary>
+        /// Verifies that MessageEntity_HasCorrectTableName behaves as expected.
+        /// </summary>
         [Fact]
         public void MessageEntity_HasCorrectTableName()
         {
@@ -20,6 +23,9 @@ namespace PutZige.Infrastructure.Tests.Data
             entity!.GetTableName().Should().Be("Messages");
         }
 
+        /// <summary>
+        /// Verifies that MessageEntity_SenderIdIndexExists behaves as expected.
+        /// </summary>
         [Fact]
         public void MessageEntity_SenderIdIndexExists()
         {
@@ -30,6 +36,9 @@ namespace PutZige.Infrastructure.Tests.Data
             indexes.Any(i => i.Properties.Any(p => p.Name == nameof(Message.SenderId))).Should().BeTrue();
         }
 
+        /// <summary>
+        /// Verifies that MessageEntity_ReceiverIdSentAtIndexExists behaves as expected.
+        /// </summary>
         [Fact]
         public void MessageEntity_ReceiverIdSentAtIndexExists()
         {
@@ -39,6 +48,9 @@ namespace PutZige.Infrastructure.Tests.Data
             indexes.Should().Contain(i => i.Properties.Select(p => p.Name).SequenceEqual(new[] { nameof(Message.ReceiverId), nameof(Message.SentAt) }));
         }
 
+        /// <summary>
+        /// Verifies that MessageEntity_SenderReceiverSentAtCompositeIndexExists behaves as expected.
+        /// </summary>
         [Fact]
         public void MessageEntity_SenderReceiverSentAtCompositeIndexExists()
         {
@@ -48,6 +60,9 @@ namespace PutZige.Infrastructure.Tests.Data
             indexes.Should().Contain(i => i.Properties.Select(p => p.Name).SequenceEqual(new[] { nameof(Message.SenderId), nameof(Message.ReceiverId), nameof(Message.SentAt) }));
         }
 
+        /// <summary>
+        /// Verifies that MessageEntity_MessageTextMaxLength4000 behaves as expected.
+        /// </summary>
         [Fact]
         public void MessageEntity_MessageTextMaxLength4000()
         {
@@ -64,6 +79,9 @@ namespace PutZige.Infrastructure.Tests.Data
             (max.Value >= AppConstants.Messaging.MaxMessageLength).Should().BeTrue();
         }
 
+        /// <summary>
+        /// Verifies that MessageEntity_RequiredFieldsConfigured behaves as expected.
+        /// </summary>
         [Fact]
         public void MessageEntity_RequiredFieldsConfigured()
         {
@@ -74,6 +92,9 @@ namespace PutZige.Infrastructure.Tests.Data
             entity.FindProperty(nameof(Message.SentAt))!.IsNullable.Should().BeFalse();
         }
 
+        /// <summary>
+        /// Verifies that MessageEntity_SoftDeleteFilterApplied behaves as expected.
+        /// </summary>
         [Fact]
         public void MessageEntity_SoftDeleteFilterApplied()
         {
@@ -84,6 +105,9 @@ namespace PutZige.Infrastructure.Tests.Data
             filter!.ToString().Should().Contain(nameof(Domain.Entities.BaseEntity.IsDeleted));
         }
 
+        /// <summary>
+        /// Verifies that MessageEntity_RelationshipsConfiguredCorrectly behaves as expected.
+        /// </summary>
         [Fact]
         public void MessageEntity_RelationshipsConfiguredCorrectly()
         {

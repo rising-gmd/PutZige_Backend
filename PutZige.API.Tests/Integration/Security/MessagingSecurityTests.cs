@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using System;
 using System.Net;
 using System.Net.Http;
@@ -39,6 +39,9 @@ namespace PutZige.API.Tests.Integration.Security
             return client;
         }
 
+        /// <summary>
+        /// Verifies that SendMessage_SqlInjectionAttempt_Sanitized behaves as expected.
+        /// </summary>
         [Fact]
         public async Task SendMessage_SqlInjectionAttempt_Sanitized()
         {
@@ -50,6 +53,9 @@ namespace PutZige.API.Tests.Integration.Security
             resp.StatusCode.Should().NotBe(HttpStatusCode.InternalServerError);
         }
 
+        /// <summary>
+        /// Verifies that SendMessage_XssInMessageText_Sanitized behaves as expected.
+        /// </summary>
         [Fact]
         public async Task SendMessage_XssInMessageText_Sanitized()
         {
@@ -63,6 +69,9 @@ namespace PutZige.API.Tests.Integration.Security
             content.Should().NotContain("<script>");
         }
 
+        /// <summary>
+        /// Verifies that SendMessage_VeryLongUserId_HandledGracefully behaves as expected.
+        /// </summary>
         [Fact]
         public async Task SendMessage_VeryLongUserId_HandledGracefully()
         {
@@ -75,6 +84,9 @@ namespace PutZige.API.Tests.Integration.Security
             resp.StatusCode.Should().NotBe(HttpStatusCode.InternalServerError);
         }
 
+        /// <summary>
+        /// Verifies that MarkAsRead_AttemptToReadOthersMessage_Blocked behaves as expected.
+        /// </summary>
         [Fact]
         public async Task MarkAsRead_AttemptToReadOthersMessage_Blocked()
         {
@@ -86,6 +98,9 @@ namespace PutZige.API.Tests.Integration.Security
             resp.StatusCode.Should().BeOneOf(HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.Unauthorized);
         }
 
+        /// <summary>
+        /// Verifies that GetConversation_OnlyOwnMessages_OthersExcluded behaves as expected.
+        /// </summary>
         [Fact]
         public async Task GetConversation_OnlyOwnMessages_OthersExcluded()
         {
@@ -97,6 +112,9 @@ namespace PutZige.API.Tests.Integration.Security
             resp.StatusCode.Should().NotBe(HttpStatusCode.InternalServerError);
         }
 
+        /// <summary>
+        /// Verifies that Hub_SqlInjectionInMessage_Sanitized behaves as expected.
+        /// </summary>
         [Fact]
         public async Task Hub_SqlInjectionInMessage_Sanitized()
         {
@@ -107,6 +125,9 @@ namespace PutZige.API.Tests.Integration.Security
             resp.StatusCode.Should().NotBe(HttpStatusCode.InternalServerError);
         }
 
+        /// <summary>
+        /// Verifies that Hub_XssInMessage_Sanitized behaves as expected.
+        /// </summary>
         [Fact]
         public async Task Hub_XssInMessage_Sanitized()
         {
@@ -115,6 +136,9 @@ namespace PutZige.API.Tests.Integration.Security
             resp.StatusCode.Should().NotBe(HttpStatusCode.InternalServerError);
         }
 
+        /// <summary>
+        /// Verifies that JwtExpired_AllEndpoints_Returns401 behaves as expected.
+        /// </summary>
         [Fact]
         public async Task JwtExpired_AllEndpoints_Returns401()
         {
@@ -128,6 +152,9 @@ namespace PutZige.API.Tests.Integration.Security
             }
         }
 
+        /// <summary>
+        /// Verifies that JwtInvalid_AllEndpoints_Returns401 behaves as expected.
+        /// </summary>
         [Fact]
         public async Task JwtInvalid_AllEndpoints_Returns401()
         {
@@ -138,6 +165,9 @@ namespace PutZige.API.Tests.Integration.Security
             r.StatusCode.Should().BeOneOf(HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.MethodNotAllowed);
         }
 
+        /// <summary>
+        /// Verifies that NoJwt_AllEndpoints_Returns401 behaves as expected.
+        /// </summary>
         [Fact]
         public async Task NoJwt_AllEndpoints_Returns401()
         {
@@ -146,6 +176,9 @@ namespace PutZige.API.Tests.Integration.Security
             r.StatusCode.Should().BeOneOf(HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.MethodNotAllowed);
         }
 
+        /// <summary>
+        /// Verifies that MessageText_4000Chars_Accepted behaves as expected.
+        /// </summary>
         [Fact]
         public async Task MessageText_4000Chars_Accepted()
         {
@@ -157,6 +190,9 @@ namespace PutZige.API.Tests.Integration.Security
             resp.StatusCode.Should().NotBe(HttpStatusCode.InternalServerError);
         }
 
+        /// <summary>
+        /// Verifies that MessageText_4001Chars_Rejected behaves as expected.
+        /// </summary>
         [Fact]
         public async Task MessageText_4001Chars_Rejected()
         {
@@ -168,6 +204,9 @@ namespace PutZige.API.Tests.Integration.Security
             resp.StatusCode.Should().BeOneOf(HttpStatusCode.BadRequest, HttpStatusCode.RequestEntityTooLarge, HttpStatusCode.UnsupportedMediaType, HttpStatusCode.InternalServerError);
         }
 
+        /// <summary>
+        /// Verifies that RateLimit_LoginExceeded_MessagingStillWorks behaves as expected.
+        /// </summary>
         [Fact]
         public async Task RateLimit_LoginExceeded_MessagingStillWorks()
         {
@@ -176,6 +215,9 @@ namespace PutZige.API.Tests.Integration.Security
             resp.StatusCode.Should().NotBe(HttpStatusCode.InternalServerError);
         }
 
+        /// <summary>
+        /// Verifies that RateLimit_MessagingExceeded_Returns429 behaves as expected.
+        /// </summary>
         [Fact]
         public async Task RateLimit_MessagingExceeded_Returns429()
         {
@@ -188,6 +230,9 @@ namespace PutZige.API.Tests.Integration.Security
             }
         }
 
+        /// <summary>
+        /// Verifies that Authorization_CrossUserMessageAccess_Denied behaves as expected.
+        /// </summary>
         [Fact]
         public async Task Authorization_CrossUserMessageAccess_Denied()
         {

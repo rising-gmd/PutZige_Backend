@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using System;
 using System.Net;
 using System.Net.Http;
@@ -39,6 +39,9 @@ namespace PutZige.API.Tests.Integration.EdgeCases
             return client;
         }
 
+        /// <summary>
+        /// Verifies that ConcurrentMessageSends_SameUsers_BothSaved behaves as expected.
+        /// </summary>
         [Fact]
         public async Task ConcurrentMessageSends_SameUsers_BothSaved()
         {
@@ -54,6 +57,9 @@ namespace PutZige.API.Tests.Integration.EdgeCases
             t2.Result.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.Created, HttpStatusCode.Accepted, HttpStatusCode.BadRequest);
         }
 
+        /// <summary>
+        /// Verifies that ConcurrentMarkAsRead_SameMessage_NoDataCorruption behaves as expected.
+        /// </summary>
         [Fact]
         public async Task ConcurrentMarkAsRead_SameMessage_NoDataCorruption()
         {
@@ -69,6 +75,9 @@ namespace PutZige.API.Tests.Integration.EdgeCases
             t2.Result.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent, HttpStatusCode.NotFound, HttpStatusCode.Forbidden);
         }
 
+        /// <summary>
+        /// Verifies that UserConnectsDisconnectsRapidly_NoOrphanedConnections behaves as expected.
+        /// </summary>
         [Fact]
         public async Task UserConnectsDisconnectsRapidly_NoOrphanedConnections()
         {
@@ -79,6 +88,9 @@ namespace PutZige.API.Tests.Integration.EdgeCases
             r2.StatusCode.Should().NotBe(HttpStatusCode.InternalServerError);
         }
 
+        /// <summary>
+        /// Verifies that ConcurrentGetConversation_ConsistentResults behaves as expected.
+        /// </summary>
         [Fact]
         public async Task ConcurrentGetConversation_ConsistentResults()
         {
@@ -93,6 +105,9 @@ namespace PutZige.API.Tests.Integration.EdgeCases
             t1.Result.StatusCode.Should().Be(t2.Result.StatusCode);
         }
 
+        /// <summary>
+        /// Verifies that Pagination_RequestPageBeyondTotal_EmptyResults behaves as expected.
+        /// </summary>
         [Fact]
         public async Task Pagination_RequestPageBeyondTotal_EmptyResults()
         {
@@ -103,6 +118,9 @@ namespace PutZige.API.Tests.Integration.EdgeCases
             content.Should().NotBeNull();
         }
 
+        /// <summary>
+        /// Verifies that Pagination_RequestPage1Million_HandlesGracefully behaves as expected.
+        /// </summary>
         [Fact]
         public async Task Pagination_RequestPage1Million_HandlesGracefully()
         {
@@ -111,6 +129,9 @@ namespace PutZige.API.Tests.Integration.EdgeCases
             resp.StatusCode.Should().NotBe(HttpStatusCode.InternalServerError);
         }
 
+        /// <summary>
+        /// Verifies that Guid_EmptyGuid_HandledGracefully behaves as expected.
+        /// </summary>
         [Fact]
         public async Task Guid_EmptyGuid_HandledGracefully()
         {
@@ -119,6 +140,9 @@ namespace PutZige.API.Tests.Integration.EdgeCases
             resp.StatusCode.Should().NotBe(HttpStatusCode.InternalServerError);
         }
 
+        /// <summary>
+        /// Verifies that Timestamps_AllUtc_NoTimezoneBugs behaves as expected.
+        /// </summary>
         [Fact]
         public async Task Timestamps_AllUtc_NoTimezoneBugs()
         {
@@ -127,6 +151,9 @@ namespace PutZige.API.Tests.Integration.EdgeCases
             resp.StatusCode.Should().NotBe(HttpStatusCode.InternalServerError);
         }
 
+        /// <summary>
+        /// Verifies that SoftDelete_DeletedMessage_NotInQueries behaves as expected.
+        /// </summary>
         [Fact]
         public async Task SoftDelete_DeletedMessage_NotInQueries()
         {
@@ -136,6 +163,9 @@ namespace PutZige.API.Tests.Integration.EdgeCases
             resp.StatusCode.Should().BeOneOf(HttpStatusCode.NotFound, HttpStatusCode.Forbidden, HttpStatusCode.Unauthorized);
         }
 
+        /// <summary>
+        /// Verifies that DatabaseTimeout_HandledGracefully behaves as expected.
+        /// </summary>
         [Fact]
         public async Task DatabaseTimeout_HandledGracefully()
         {
@@ -144,6 +174,9 @@ namespace PutZige.API.Tests.Integration.EdgeCases
             resp.StatusCode.Should().NotBe(HttpStatusCode.InternalServerError);
         }
 
+        /// <summary>
+        /// Verifies that HubCrash_MessagesNotLost_PersistedInDatabase behaves as expected.
+        /// </summary>
         [Fact]
         public async Task HubCrash_MessagesNotLost_PersistedInDatabase()
         {
@@ -152,6 +185,9 @@ namespace PutZige.API.Tests.Integration.EdgeCases
             r.StatusCode.Should().NotBe(HttpStatusCode.InternalServerError);
         }
 
+        /// <summary>
+        /// Verifies that UserReconnects_ReceivesPendingMessages behaves as expected.
+        /// </summary>
         [Fact]
         public async Task UserReconnects_ReceivesPendingMessages()
         {
@@ -160,6 +196,9 @@ namespace PutZige.API.Tests.Integration.EdgeCases
             r.StatusCode.Should().NotBe(HttpStatusCode.InternalServerError);
         }
 
+        /// <summary>
+        /// Verifies that MessageText_EmptyString_Rejected behaves as expected.
+        /// </summary>
         [Fact]
         public async Task MessageText_EmptyString_Rejected()
         {

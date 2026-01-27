@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using System;
 using FluentAssertions;
 using PutZige.Application.DTOs.Messaging;
@@ -11,6 +11,9 @@ public class ConversationHistoryRequestValidatorTests
 {
     private readonly ConversationHistoryRequestValidator _validator = new ConversationHistoryRequestValidator();
 
+    /// <summary>
+    /// Verifies that Validator_ValidRequest_Passes behaves as expected.
+    /// </summary>
     [Fact]
     public void Validator_ValidRequest_Passes()
     {
@@ -19,6 +22,9 @@ public class ConversationHistoryRequestValidatorTests
         res.IsValid.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Verifies that Validator_OtherUserIdEmpty_Fails behaves as expected.
+    /// </summary>
     [Fact]
     public void Validator_OtherUserIdEmpty_Fails()
     {
@@ -27,6 +33,9 @@ public class ConversationHistoryRequestValidatorTests
         res.IsValid.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Verifies that Validator_PageNumberZero_Fails behaves as expected.
+    /// </summary>
     [Fact]
     public void Validator_PageNumberZero_Fails()
     {
@@ -35,6 +44,9 @@ public class ConversationHistoryRequestValidatorTests
         res.IsValid.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Verifies that Validator_PageNumberNegative_Fails behaves as expected.
+    /// </summary>
     [Fact]
     public void Validator_PageNumberNegative_Fails()
     {
@@ -43,6 +55,9 @@ public class ConversationHistoryRequestValidatorTests
         res.IsValid.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Verifies that Validator_PageSizeZero_Fails behaves as expected.
+    /// </summary>
     [Fact]
     public void Validator_PageSizeZero_Fails()
     {
@@ -51,6 +66,9 @@ public class ConversationHistoryRequestValidatorTests
         res.IsValid.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Verifies that Validator_PageSizeNegative_Fails behaves as expected.
+    /// </summary>
     [Fact]
     public void Validator_PageSizeNegative_Fails()
     {
@@ -59,6 +77,9 @@ public class ConversationHistoryRequestValidatorTests
         res.IsValid.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Verifies that Validator_PageSizeExceedsMax_Fails behaves as expected.
+    /// </summary>
     [Fact]
     public void Validator_PageSizeExceedsMax_Fails()
     {

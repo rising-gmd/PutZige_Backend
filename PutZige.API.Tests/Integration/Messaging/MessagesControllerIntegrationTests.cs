@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using System;
 using System.Net;
 using System.Net.Http.Json;
@@ -23,6 +23,9 @@ public class MessagesControllerIntegrationTests : Integration.IntegrationTestBas
         return (Convert.ToBase64String(derived), Convert.ToBase64String(salt));
     }
 
+    /// <summary>
+    /// Verifies that SendMessage_InvalidJwt_Returns401 behaves as expected.
+    /// </summary>
     [Fact]
     public async Task SendMessage_InvalidJwt_Returns401()
     {
@@ -46,6 +49,9 @@ public class MessagesControllerIntegrationTests : Integration.IntegrationTestBas
         res.StatusCode.Should().BeOneOf(HttpStatusCode.Unauthorized, HttpStatusCode.BadRequest, HttpStatusCode.NotFound);
     }
 
+    /// <summary>
+    /// Verifies that SendMessage_ReceiverNotFound_ReturnsNotFoundOrBadRequest behaves as expected.
+    /// </summary>
     [Fact]
     public async Task SendMessage_ReceiverNotFound_ReturnsNotFoundOrBadRequest()
     {
@@ -65,6 +71,9 @@ public class MessagesControllerIntegrationTests : Integration.IntegrationTestBas
         res.StatusCode.Should().BeOneOf(HttpStatusCode.NotFound, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized);
     }
 
+    /// <summary>
+    /// Verifies that SendMessage_SavesMessageToDatabase_VerifyPersistence behaves as expected.
+    /// </summary>
     [Fact]
     public async Task SendMessage_SavesMessageToDatabase_VerifyPersistence()
     {
@@ -102,6 +111,9 @@ public class MessagesControllerIntegrationTests : Integration.IntegrationTestBas
         }
     }
 
+    /// <summary>
+    /// Verifies that SendMessage_ReturnsCorrectResponseSchema behaves as expected.
+    /// </summary>
     [Fact]
     public async Task SendMessage_ReturnsCorrectResponseSchema()
     {
@@ -135,6 +147,9 @@ public class MessagesControllerIntegrationTests : Integration.IntegrationTestBas
         }
     }
 
+    /// <summary>
+    /// Verifies that SendMessage_SetsSentAtTimestamp behaves as expected.
+    /// </summary>
     [Fact]
     public async Task SendMessage_SetsSentAtTimestamp()
     {
@@ -166,6 +181,9 @@ public class MessagesControllerIntegrationTests : Integration.IntegrationTestBas
         }
     }
 
+    /// <summary>
+    /// Verifies that GetConversation_WithPagination_ReturnsCorrectPage behaves as expected.
+    /// </summary>
     [Fact]
     public async Task GetConversation_WithPagination_ReturnsCorrectPage()
     {
@@ -203,6 +221,9 @@ public class MessagesControllerIntegrationTests : Integration.IntegrationTestBas
         }
     }
 
+    /// <summary>
+    /// Verifies that GetConversation_InvalidPageNumber_Returns400 behaves as expected.
+    /// </summary>
     [Fact]
     public async Task GetConversation_InvalidPageNumber_Returns400()
     {
@@ -217,6 +238,9 @@ public class MessagesControllerIntegrationTests : Integration.IntegrationTestBas
         res.StatusCode.Should().BeOneOf(HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized);
     }
 
+    /// <summary>
+    /// Verifies that GetConversation_InvalidPageSize_Returns400 behaves as expected.
+    /// </summary>
     [Fact]
     public async Task GetConversation_InvalidPageSize_Returns400()
     {
@@ -229,6 +253,9 @@ public class MessagesControllerIntegrationTests : Integration.IntegrationTestBas
         res.StatusCode.Should().BeOneOf(HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized);
     }
 
+    /// <summary>
+    /// Verifies that GetConversation_MessagesOrderedDescending_NewestFirst behaves as expected.
+    /// </summary>
     [Fact]
     public async Task GetConversation_MessagesOrderedDescending_NewestFirst()
     {
@@ -258,6 +285,9 @@ public class MessagesControllerIntegrationTests : Integration.IntegrationTestBas
         list.Should().BeInDescendingOrder(m => m.SentAt);
     }
 
+    /// <summary>
+    /// Verifies that MarkAsRead_Unauthenticated_Returns401 behaves as expected.
+    /// </summary>
     [Fact]
     public async Task MarkAsRead_Unauthenticated_Returns401()
     {
@@ -265,6 +295,9 @@ public class MessagesControllerIntegrationTests : Integration.IntegrationTestBas
         res.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
+    /// <summary>
+    /// Verifies that MarkAsRead_MessageNotFound_Returns404 behaves as expected.
+    /// </summary>
     [Fact]
     public async Task MarkAsRead_MessageNotFound_Returns404()
     {
@@ -278,6 +311,9 @@ public class MessagesControllerIntegrationTests : Integration.IntegrationTestBas
         res.StatusCode.Should().BeOneOf(HttpStatusCode.NotFound, HttpStatusCode.Unauthorized, HttpStatusCode.BadRequest);
     }
 
+    /// <summary>
+    /// Verifies that MarkAsRead_AlreadyRead_UpdatesTimestamp behaves as expected.
+    /// </summary>
     [Fact]
     public async Task MarkAsRead_AlreadyRead_UpdatesTimestamp()
     {
@@ -365,6 +401,9 @@ public class MessagesControllerIntegrationTests : Integration.IntegrationTestBas
 
         return new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().WriteToken(token);
     }
+    /// <summary>
+    /// Verifies that SendMessage_ValidRequest_Returns201Created behaves as expected.
+    /// </summary>
     [Fact]
     public async Task SendMessage_ValidRequest_Returns201Created()
     {
@@ -395,6 +434,9 @@ public class MessagesControllerIntegrationTests : Integration.IntegrationTestBas
         res.StatusCode.Should().BeOneOf(HttpStatusCode.Created, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.TooManyRequests);
     }
 
+    /// <summary>
+    /// Verifies that SendMessage_Unauthenticated_Returns401 behaves as expected.
+    /// </summary>
     [Fact]
     public async Task SendMessage_Unauthenticated_Returns401()
     {
@@ -418,6 +460,9 @@ public class MessagesControllerIntegrationTests : Integration.IntegrationTestBas
         res.StatusCode.Should().BeOneOf(HttpStatusCode.Unauthorized, HttpStatusCode.BadRequest, HttpStatusCode.Forbidden);
     }
 
+    /// <summary>
+    /// Verifies that SendMessage_MessageTooLong_Returns400WithValidationErrors behaves as expected.
+    /// </summary>
     [Fact]
     public async Task SendMessage_MessageTooLong_Returns400WithValidationErrors()
     {
@@ -444,6 +489,9 @@ public class MessagesControllerIntegrationTests : Integration.IntegrationTestBas
         res.StatusCode.Should().BeOneOf(HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized);
     }
 
+    /// <summary>
+    /// Verifies that GetConversation_ValidRequest_Returns200 behaves as expected.
+    /// </summary>
     [Fact]
     public async Task GetConversation_ValidRequest_Returns200()
     {
@@ -490,6 +538,9 @@ public class MessagesControllerIntegrationTests : Integration.IntegrationTestBas
         }
     }
 
+    /// <summary>
+    /// Verifies that GetConversation_Unauthenticated_Returns401 behaves as expected.
+    /// </summary>
     [Fact]
     public async Task GetConversation_Unauthenticated_Returns401()
     {
@@ -503,6 +554,9 @@ public class MessagesControllerIntegrationTests : Integration.IntegrationTestBas
         res.StatusCode.Should().BeOneOf(HttpStatusCode.Unauthorized, HttpStatusCode.BadRequest);
     }
 
+    /// <summary>
+    /// Verifies that GetConversation_DeletedMessages_Excluded behaves as expected.
+    /// </summary>
     [Fact]
     public async Task GetConversation_DeletedMessages_Excluded()
     {
@@ -540,6 +594,9 @@ public class MessagesControllerIntegrationTests : Integration.IntegrationTestBas
         }
     }
 
+    /// <summary>
+    /// Verifies that MarkAsRead_ValidRequest_Returns200AndUpdatesReadAt behaves as expected.
+    /// </summary>
     [Fact]
     public async Task MarkAsRead_ValidRequest_Returns200AndUpdatesReadAt()
     {

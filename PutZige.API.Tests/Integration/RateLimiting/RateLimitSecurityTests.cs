@@ -1,4 +1,4 @@
-// PutZige.API.Tests/Integration/RateLimiting/RateLimitSecurityTests.cs
+﻿// PutZige.API.Tests/Integration/RateLimiting/RateLimitSecurityTests.cs
 #nullable enable
 using System.Net;
 using System.Net.Http.Json;
@@ -37,6 +37,9 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             await db.SaveChangesAsync();
         }
 
+        /// <summary>
+        /// Verifies that Security_BruteForceLogin_BlockedAt5Attempts behaves as expected.
+        /// </summary>
         [Fact]
         public async Task Security_BruteForceLogin_BlockedAt5Attempts()
         {
@@ -53,6 +56,9 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             res.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
         }
 
+        /// <summary>
+        /// Verifies that Security_DistributedBruteForce_MultipleIPs_DetectedAndBlocked behaves as expected.
+        /// </summary>
         [Fact]
         public async Task Security_DistributedBruteForce_MultipleIPs_DetectedAndBlocked()
         {
@@ -73,6 +79,9 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             final.StatusCode.Should().BeOneOf(HttpStatusCode.BadRequest, HttpStatusCode.TooManyRequests);
         }
 
+        /// <summary>
+        /// Verifies that Security_AccountEnumeration_ResponseTimingConsistent behaves as expected.
+        /// </summary>
         [Fact]
         public async Task Security_AccountEnumeration_ResponseTimingConsistent()
         {
@@ -84,6 +93,9 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             sw.ElapsedMilliseconds.Should().BeLessThan(500);
         }
 
+        /// <summary>
+        /// Verifies that Security_HeaderInjection_XForwardedFor_Sanitized behaves as expected.
+        /// </summary>
         [Fact]
         public async Task Security_HeaderInjection_XForwardedFor_Sanitized()
         {
@@ -98,6 +110,9 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             res.StatusCode.Should().BeOneOf(HttpStatusCode.BadRequest, HttpStatusCode.OK, HttpStatusCode.TooManyRequests);
         }
 
+        /// <summary>
+        /// Verifies that Security_SQLInjectionInUserId_Sanitized behaves as expected.
+        /// </summary>
         [Fact]
         public async Task Security_SQLInjectionInUserId_Sanitized()
         {
@@ -106,6 +121,9 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             res.StatusCode.Should().BeOneOf(HttpStatusCode.BadRequest, HttpStatusCode.OK, HttpStatusCode.TooManyRequests);
         }
 
+        /// <summary>
+        /// Verifies that Security_XSSInPartitionKey_Sanitized behaves as expected.
+        /// </summary>
         [Fact]
         public async Task Security_XSSInPartitionKey_Sanitized()
         {
@@ -119,6 +137,9 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             res.StatusCode.Should().BeOneOf(HttpStatusCode.BadRequest, HttpStatusCode.OK, HttpStatusCode.TooManyRequests);
         }
 
+        /// <summary>
+        /// Verifies that Security_PasswordSpray_AcrossMultipleAccounts_Limited behaves as expected.
+        /// </summary>
         [Fact]
         public async Task Security_PasswordSpray_AcrossMultipleAccounts_Limited()
         {

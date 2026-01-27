@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using System;
 using System.Security.Claims;
 using FluentAssertions;
@@ -25,6 +25,9 @@ public class CurrentUserServiceTests
         return new CurrentUserService(_httpContextAccessor, null);
     }
 
+    /// <summary>
+    /// Verifies that GetUserId_AuthenticatedUser_ReturnsGuid behaves as expected.
+    /// </summary>
     [Fact]
     public void GetUserId_AuthenticatedUser_ReturnsGuid()
     {
@@ -40,6 +43,9 @@ public class CurrentUserServiceTests
         result.Should().Be(id);
     }
 
+    /// <summary>
+    /// Verifies that TryGetUserId_AuthenticatedUser_ReturnsGuid behaves as expected.
+    /// </summary>
     [Fact]
     public void TryGetUserId_AuthenticatedUser_ReturnsGuid()
     {
@@ -55,6 +61,9 @@ public class CurrentUserServiceTests
         result.Should().Be(id);
     }
 
+    /// <summary>
+    /// Verifies that TryGetUserId_NotAuthenticated_ReturnsNull behaves as expected.
+    /// </summary>
     [Fact]
     public void TryGetUserId_NotAuthenticated_ReturnsNull()
     {
@@ -68,6 +77,9 @@ public class CurrentUserServiceTests
         result.Should().BeNull();
     }
 
+    /// <summary>
+    /// Verifies that TryGetUserId_InvalidGuidFormat_ReturnsNullAndLogsWarning behaves as expected.
+    /// </summary>
     [Fact]
     public void TryGetUserId_InvalidGuidFormat_ReturnsNullAndLogsWarning()
     {
@@ -82,6 +94,9 @@ public class CurrentUserServiceTests
         result.Should().BeNull();
     }
 
+    /// <summary>
+    /// Verifies that GetUserEmail_HasEmailClaim_ReturnsEmail behaves as expected.
+    /// </summary>
     [Fact]
     public void GetUserEmail_HasEmailClaim_ReturnsEmail()
     {
@@ -97,6 +112,9 @@ public class CurrentUserServiceTests
         result.Should().Be(email);
     }
 
+    /// <summary>
+    /// Verifies that GetUserEmail_NoEmailClaim_ReturnsNull behaves as expected.
+    /// </summary>
     [Fact]
     public void GetUserEmail_NoEmailClaim_ReturnsNull()
     {
@@ -111,6 +129,9 @@ public class CurrentUserServiceTests
         result.Should().BeNull();
     }
 
+    /// <summary>
+    /// Verifies that GetUserName_HasUsernameClaim_ReturnsUsername behaves as expected.
+    /// </summary>
     [Fact]
     public void GetUserName_HasUsernameClaim_ReturnsUsername()
     {
@@ -126,6 +147,9 @@ public class CurrentUserServiceTests
         result.Should().Be(uname);
     }
 
+    /// <summary>
+    /// Verifies that GetUserName_NoUsernameClaim_FallsBackToIdentityName behaves as expected.
+    /// </summary>
     [Fact]
     public void GetUserName_NoUsernameClaim_FallsBackToIdentityName()
     {
@@ -141,6 +165,9 @@ public class CurrentUserServiceTests
         result.Should().Be("fallback");
     }
 
+    /// <summary>
+    /// Verifies that IsAuthenticated_AuthenticatedUser_ReturnsTrue behaves as expected.
+    /// </summary>
     [Fact]
     public void IsAuthenticated_AuthenticatedUser_ReturnsTrue()
     {
@@ -155,6 +182,9 @@ public class CurrentUserServiceTests
         result.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Verifies that IsAuthenticated_NotAuthenticated_ReturnsFalse behaves as expected.
+    /// </summary>
     [Fact]
     public void IsAuthenticated_NotAuthenticated_ReturnsFalse()
     {
@@ -168,6 +198,9 @@ public class CurrentUserServiceTests
         result.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Verifies that IsAuthenticated_NullHttpContext_ReturnsFalse behaves as expected.
+    /// </summary>
     [Fact]
     public void IsAuthenticated_NullHttpContext_ReturnsFalse()
     {

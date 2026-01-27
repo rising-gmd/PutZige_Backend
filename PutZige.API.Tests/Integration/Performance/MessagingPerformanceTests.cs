@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using System;
 using System.Diagnostics;
 using System.Linq;
@@ -25,6 +25,9 @@ namespace PutZige.API.Tests.Integration.Performance
     {
         public MessagingPerformanceTests() : base() { }
 
+        /// <summary>
+        /// Verifies that GetConversation_1000Messages_LoadsUnder500ms behaves as expected.
+        /// </summary>
         [Fact]
         public async Task GetConversation_1000Messages_LoadsUnder500ms()
         {
@@ -66,6 +69,9 @@ namespace PutZige.API.Tests.Integration.Performance
             sw.ElapsedMilliseconds.Should().BeLessThan(500, "Conversation endpoint should return quickly for indexed queries");
         }
 
+        /// <summary>
+        /// Verifies that SendMessage_100Concurrent_AllProcessed behaves as expected.
+        /// </summary>
         [Fact]
         public async Task SendMessage_100Concurrent_AllProcessed()
         {
@@ -102,6 +108,9 @@ namespace PutZige.API.Tests.Integration.Performance
             }
         }
 
+        /// <summary>
+        /// Verifies that Hub_1000Connections_MemoryAcceptable behaves as expected.
+        /// </summary>
         [Fact]
         public void Hub_1000Connections_MemoryAcceptable()
         {
@@ -123,6 +132,9 @@ namespace PutZige.API.Tests.Integration.Performance
             dict!.Count.Should().Be(1000);
         }
 
+        /// <summary>
+        /// Verifies that MessageRepository_UsesIndexes_VerifyQueryPlan behaves as expected.
+        /// </summary>
         [Fact]
         public void MessageRepository_UsesIndexes_VerifyQueryPlan()
         {
@@ -136,6 +148,9 @@ namespace PutZige.API.Tests.Integration.Performance
             indexes.Should().Contain(i => i.Properties.Select(p => p.Name).SequenceEqual(new[] { "SenderId", "ReceiverId", "SentAt" }));
         }
 
+        /// <summary>
+        /// Verifies that Pagination_Large_Dataset_PerformsWell behaves as expected.
+        /// </summary>
         [Fact]
         public async Task Pagination_Large_Dataset_PerformsWell()
         {

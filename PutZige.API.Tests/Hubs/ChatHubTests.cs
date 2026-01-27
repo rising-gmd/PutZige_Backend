@@ -63,6 +63,9 @@ public class ChatHubTests : Integration.IntegrationTestBase
         await db.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Verifies authenticated connections are tracked when a user connects.
+    /// </summary>
     [Fact]
     public async Task OnConnectedAsync_AuthenticatedUser_TracksConnection()
     {
@@ -83,6 +86,9 @@ public class ChatHubTests : Integration.IntegrationTestBase
         }
     }
 
+    /// <summary>
+    /// Verifies a message is delivered immediately to an online receiver.
+    /// </summary>
     [Fact]
     public async Task SendMessage_ReceiverOnline_DeliversMessageImmediately()
     {
@@ -119,6 +125,9 @@ public class ChatHubTests : Integration.IntegrationTestBase
         }
     }
 
+    /// <summary>
+    /// Verifies messages sent to an online receiver are marked as delivered.
+    /// </summary>
     [Fact]
     public async Task SendMessage_ReceiverOnline_MarksAsDelivered()
     {
@@ -166,6 +175,9 @@ public class ChatHubTests : Integration.IntegrationTestBase
         }
     }
 
+    /// <summary>
+    /// Verifies messages to offline receivers are not delivered immediately.
+    /// </summary>
     [Fact]
     public async Task SendMessage_ReceiverOffline_DoesNotDeliverImmediately()
     {
@@ -199,6 +211,9 @@ public class ChatHubTests : Integration.IntegrationTestBase
         }
     }
 
+    /// <summary>
+    /// Verifies messages for offline receivers are persisted and not marked delivered.
+    /// </summary>
     [Fact]
     public async Task SendMessage_ReceiverOffline_MessageSavedToDatabase()
     {
@@ -233,6 +248,9 @@ public class ChatHubTests : Integration.IntegrationTestBase
         }
     }
 
+    /// <summary>
+    /// Verifies offline receiver messages remain undelivered in the database.
+    /// </summary>
     [Fact]
     public async Task SendMessage_ReceiverOffline_DoesNotMarkAsDelivered()
     {
@@ -268,6 +286,9 @@ public class ChatHubTests : Integration.IntegrationTestBase
         }
     }
 
+    /// <summary>
+    /// Verifies sender receives a MessageSent confirmation event after sending.
+    /// </summary>
     [Fact]
     public async Task SendMessage_SenderReceivesConfirmation_MessageSentEvent()
     {
@@ -305,6 +326,9 @@ public class ChatHubTests : Integration.IntegrationTestBase
         }
     }
 
+    /// <summary>
+    /// Verifies receiver receives the ReceiveMessage event with payload.
+    /// </summary>
     [Fact]
     public async Task SendMessage_ReceiverGetsMessage_ReceiveMessageEvent()
     {
@@ -343,6 +367,9 @@ public class ChatHubTests : Integration.IntegrationTestBase
         }
     }
 
+    /// <summary>
+    /// Verifies invoking SendMessage with an invalid receiver id throws.
+    /// </summary>
     [Fact]
     public async Task SendMessage_InvalidReceiverId_ThrowsException()
     {
@@ -366,6 +393,9 @@ public class ChatHubTests : Integration.IntegrationTestBase
         }
     }
 
+    /// <summary>
+    /// Verifies sending to a non-existent receiver results in an exception.
+    /// </summary>
     [Fact]
     public async Task SendMessage_ReceiverNotFound_ThrowsException()
     {
@@ -389,6 +419,9 @@ public class ChatHubTests : Integration.IntegrationTestBase
         }
     }
 
+    /// <summary>
+    /// Verifies overly long messages trigger validation and are rejected.
+    /// </summary>
     [Fact]
     public async Task SendMessage_MessageTooLong_ThrowsValidationException()
     {
@@ -416,6 +449,9 @@ public class ChatHubTests : Integration.IntegrationTestBase
         }
     }
 
+    /// <summary>
+    /// Verifies concurrent SendMessage calls are thread-safe and do not throw.
+    /// </summary>
     [Fact]
     public async Task SendMessage_ConcurrentMessages_ThreadSafe()
     {
@@ -472,6 +508,9 @@ public class ChatHubTests : Integration.IntegrationTestBase
         }
     }
 
+    /// <summary>
+    /// Verifies SendMessage persists the message to the database.
+    /// </summary>
     [Fact]
     public async Task SendMessage_SavesMessageToDatabase_VerifyPersistence()
     {
@@ -505,6 +544,9 @@ public class ChatHubTests : Integration.IntegrationTestBase
         }
     }
 
+    /// <summary>
+    /// Verifies OnConnectedAsync adds the user id to the connection mapping.
+    /// </summary>
     [Fact]
     public async Task OnConnectedAsync_AddsUserIdToConnectionMapping()
     {
@@ -525,6 +567,9 @@ public class ChatHubTests : Integration.IntegrationTestBase
         }
     }
 
+    /// <summary>
+    /// Verifies connection information is logged on connect.
+    /// </summary>
     [Fact]
     public async Task OnConnectedAsync_LogsConnectionInfo()
     {
@@ -545,6 +590,9 @@ public class ChatHubTests : Integration.IntegrationTestBase
         }
     }
 
+    /// <summary>
+    /// Verifies disconnection removes the user from the connection mapping.
+    /// </summary>
     [Fact]
     public async Task OnDisconnectedAsync_RemovesUserFromMapping()
     {
@@ -561,6 +609,9 @@ public class ChatHubTests : Integration.IntegrationTestBase
         await connection.DisposeAsync();
     }
 
+    /// <summary>
+    /// Verifies disconnection information is logged.
+    /// </summary>
     [Fact]
     public async Task OnDisconnectedAsync_LogsDisconnectionInfo()
     {
@@ -577,6 +628,9 @@ public class ChatHubTests : Integration.IntegrationTestBase
         await connection.DisposeAsync();
     }
 
+    /// <summary>
+    /// Verifies disconnection with an exception is handled gracefully.
+    /// </summary>
     [Fact]
     public async Task OnDisconnectedAsync_WithException_HandlesGracefully()
     {
@@ -597,6 +651,9 @@ public class ChatHubTests : Integration.IntegrationTestBase
         }
     }
 
+    /// <summary>
+    /// Verifies unauthenticated connection attempts are rejected.
+    /// </summary>
     [Fact]
     public async Task OnConnectedAsync_Unauthenticated_Rejected()
     {
@@ -612,6 +669,9 @@ public class ChatHubTests : Integration.IntegrationTestBase
         }
     }
 
+    /// <summary>
+    /// Verifies behavior when connecting with an invalid JWT (reject or accept based on configuration).
+    /// </summary>
     [Fact]
     public async Task OnConnectedAsync_InvalidJwt_Rejected()
     {
@@ -636,6 +696,9 @@ public class ChatHubTests : Integration.IntegrationTestBase
         }
     }
 
+    /// <summary>
+    /// Verifies multiple connections from the same user are accepted and tracked correctly.
+    /// </summary>
     [Fact]
     public async Task OnConnectedAsync_SameUserMultipleConnections_OverwritesConnectionId()
     {
@@ -662,6 +725,9 @@ public class ChatHubTests : Integration.IntegrationTestBase
         }
     }
 
+    /// <summary>
+    /// Verifies multiple users maintain independent, isolated connections.
+    /// </summary>
     [Fact]
     public async Task MultipleUsers_IndependentConnections_IsolatedCorrectly()
     {
@@ -691,6 +757,9 @@ public class ChatHubTests : Integration.IntegrationTestBase
         }
     }
 
+    /// <summary>
+    /// Verifies reconnecting a user updates the connection id and removes the old one.
+    /// </summary>
     [Fact]
     public async Task UserReconnects_UpdatesConnectionId_OldIdRemoved()
     {
@@ -722,6 +791,9 @@ public class ChatHubTests : Integration.IntegrationTestBase
         }
     }
 
+    /// <summary>
+    /// Verifies a user can send messages after disconnecting and reconnecting.
+    /// </summary>
     [Fact]
     public async Task UserDisconnectsThenReconnects_CanSendMessages()
     {
@@ -754,6 +826,9 @@ public class ChatHubTests : Integration.IntegrationTestBase
         }
     }
 
+    /// <summary>
+    /// Verifies concurrent hub connections handle multiple users without race conditions.
+    /// </summary>
     [Fact]
     public async Task ConcurrentConnections_ThreadSafe_NoRaceConditions()
     {
@@ -788,6 +863,9 @@ public class ChatHubTests : Integration.IntegrationTestBase
         true.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Verifies hub connection authenticates when JWT is provided via query string.
+    /// </summary>
     [Fact]
     public async Task HubConnection_WithJwtQueryString_Authenticated()
     {

@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -57,6 +57,9 @@ public partial class MessagingServiceTests
         CreatedAt = DateTime.UtcNow
     };
 
+    /// <summary>
+    /// Verifies that SendMessageAsync_ValidInputs_CreatesMessageAndReturnsResponse behaves as expected.
+    /// </summary>
     [Fact]
     public async Task SendMessageAsync_ValidInputs_CreatesMessageAndReturnsResponse()
     {
@@ -80,6 +83,9 @@ public partial class MessagingServiceTests
         captured.ReceiverId.Should().Be(receiver);
     }
 
+    /// <summary>
+    /// Verifies that SendMessageAsync_ReceiverNotFound_ThrowsInvalidOperationException behaves as expected.
+    /// </summary>
     [Fact]
     public async Task SendMessageAsync_ReceiverNotFound_ThrowsInvalidOperationException()
     {
@@ -95,6 +101,9 @@ public partial class MessagingServiceTests
         await act.Should().ThrowAsync<KeyNotFoundException>();
     }
 
+    /// <summary>
+    /// Verifies that SendMessageAsync_MessageTooLong_ThrowsValidationException behaves as expected.
+    /// </summary>
     [Fact]
     public async Task SendMessageAsync_MessageTooLong_ThrowsValidationException()
     {
@@ -110,6 +119,9 @@ public partial class MessagingServiceTests
         await act.Should().ThrowAsync<ArgumentException>();
     }
 
+    /// <summary>
+    /// Verifies that SendMessageAsync_SenderEqualsReceiver_Allowed behaves as expected.
+    /// </summary>
     [Fact]
     public async Task SendMessageAsync_SenderEqualsReceiver_Allowed()
     {
@@ -127,6 +139,9 @@ public partial class MessagingServiceTests
         res.Should().NotBeNull();
     }
 
+    /// <summary>
+    /// Verifies that SendMessageAsync_NullMessageText_ThrowsArgumentException behaves as expected.
+    /// </summary>
     [Fact]
     public async Task SendMessageAsync_NullMessageText_ThrowsArgumentException()
     {
@@ -141,6 +156,9 @@ public partial class MessagingServiceTests
         await act.Should().ThrowAsync<ArgumentException>();
     }
 
+    /// <summary>
+    /// Verifies that SendMessageAsync_SaveSuccessful_LogsInformation behaves as expected.
+    /// </summary>
     [Fact]
     public async Task SendMessageAsync_SaveSuccessful_LogsInformation()
     {
@@ -160,6 +178,9 @@ public partial class MessagingServiceTests
         _mockUow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    /// <summary>
+    /// Verifies that SendMessageAsync_RepositoryThrows_PropagatesException behaves as expected.
+    /// </summary>
     [Fact]
     public async Task SendMessageAsync_RepositoryThrows_PropagatesException()
     {
@@ -177,6 +198,9 @@ public partial class MessagingServiceTests
         await act.Should().ThrowAsync<InvalidOperationException>();
     }
 
+    /// <summary>
+    /// Verifies that SendMessageAsync_SetsCorrectTimestamps_SentAtIsUtcNow behaves as expected.
+    /// </summary>
     [Fact]
     public async Task SendMessageAsync_SetsCorrectTimestamps_SentAtIsUtcNow()
     {
@@ -198,6 +222,9 @@ public partial class MessagingServiceTests
         captured!.SentAt.Should().BeOnOrAfter(before);
     }
 
+    /// <summary>
+    /// Verifies that SendMessageAsync_DeliveredAtInitiallyNull behaves as expected.
+    /// </summary>
     [Fact]
     public async Task SendMessageAsync_DeliveredAtInitiallyNull()
     {

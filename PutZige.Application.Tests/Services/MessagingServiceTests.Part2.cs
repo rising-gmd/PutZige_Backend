@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,6 +19,9 @@ namespace PutZige.Application.Tests.Services;
 public partial class MessagingServiceTests
 {
     // Additional delivery/read tests continue in partial class file
+    /// <summary>
+    /// Verifies that GetConversationHistoryAsync_ValidInputs_ReturnsPaginatedMessages behaves as expected.
+    /// </summary>
     [Fact]
     public async Task GetConversationHistoryAsync_ValidInputs_ReturnsPaginatedMessages()
     {
@@ -43,6 +46,9 @@ public partial class MessagingServiceTests
         res.TotalCount.Should().Be(3);
     }
 
+    /// <summary>
+    /// Verifies that GetConversationHistoryAsync_EmptyConversation_ReturnsEmptyList behaves as expected.
+    /// </summary>
     [Fact]
     public async Task GetConversationHistoryAsync_EmptyConversation_ReturnsEmptyList()
     {
@@ -59,6 +65,9 @@ public partial class MessagingServiceTests
         res.TotalCount.Should().Be(0);
     }
 
+    /// <summary>
+    /// Verifies that GetConversationHistoryAsync_InvalidPageNumber_Throws behaves as expected.
+    /// </summary>
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
@@ -75,6 +84,9 @@ public partial class MessagingServiceTests
         await act.Should().ThrowAsync<ArgumentOutOfRangeException>();
     }
 
+    /// <summary>
+    /// Verifies that GetConversationHistoryAsync_InvalidPageSize_Throws behaves as expected.
+    /// </summary>
     [Theory]
     [InlineData(0)]
     [InlineData(-5)]
@@ -92,6 +104,9 @@ public partial class MessagingServiceTests
         await act.Should().ThrowAsync<ArgumentOutOfRangeException>();
     }
 
+    /// <summary>
+    /// Verifies that GetConversationHistoryAsync_CalculatesHasNextPageTrue behaves as expected.
+    /// </summary>
     [Fact]
     public async Task GetConversationHistoryAsync_CalculatesHasNextPageTrue()
     {
@@ -110,6 +125,9 @@ public partial class MessagingServiceTests
         res.TotalCount.Should().Be(5);
     }
 
+    /// <summary>
+    /// Verifies that GetConversationHistoryAsync_LastPage_HasNextPageFalse behaves as expected.
+    /// </summary>
     [Fact]
     public async Task GetConversationHistoryAsync_LastPage_HasNextPageFalse()
     {
@@ -128,6 +146,9 @@ public partial class MessagingServiceTests
         res.TotalCount.Should().Be(4);
     }
 
+    /// <summary>
+    /// Verifies that GetConversationHistoryAsync_MapsToMessageDtoCorrectly behaves as expected.
+    /// </summary>
     [Fact]
     public async Task GetConversationHistoryAsync_MapsToMessageDtoCorrectly()
     {
@@ -145,6 +166,9 @@ public partial class MessagingServiceTests
         res.Messages.First().MessageText.Should().Be("maptest");
     }
 
+    /// <summary>
+    /// Verifies that MarkMessageAsDelivered_ValidMessage_SetsDeliveredAt behaves as expected.
+    /// </summary>
     [Fact]
     public async Task MarkMessageAsDelivered_ValidMessage_SetsDeliveredAt()
     {
@@ -160,6 +184,9 @@ public partial class MessagingServiceTests
         _mockMessageRepo.Verify(r => r.UpdateAsync(It.Is<Message>(x => x.DeliveredAt != null), It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    /// <summary>
+    /// Verifies that MarkMessageAsDelivered_MessageNotFound_ThrowsKeyNotFoundException behaves as expected.
+    /// </summary>
     [Fact]
     public async Task MarkMessageAsDelivered_MessageNotFound_ThrowsKeyNotFoundException()
     {
