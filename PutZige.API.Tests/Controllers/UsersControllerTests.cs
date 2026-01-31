@@ -48,8 +48,7 @@ namespace PutZige.API.Tests.Controllers
                 Email = "inttest@example.com",
                 Username = "intuser",
                 DisplayName = "Integration User",
-                Password = "Password123!",
-                ConfirmPassword = "Password123!"
+                Password = "Password123!"
             };
 
             var response = await Client.PostAsJsonAsync(TestApiEndpoints.Users, request);
@@ -67,8 +66,7 @@ namespace PutZige.API.Tests.Controllers
                 Email = "inttest2@example.com",
                 Username = "intuser2",
                 DisplayName = "Integration User 2",
-                Password = "Password123!",
-                ConfirmPassword = "Password123!"
+                Password = "Password123!"
             };
 
             var response = await Client.PostAsJsonAsync(TestApiEndpoints.Users, request);
@@ -92,8 +90,7 @@ namespace PutZige.API.Tests.Controllers
                 Email = email,
                 Username = "saveduser",
                 DisplayName = "Saved User",
-                Password = "Password123!",
-                ConfirmPassword = "Password123!"
+                Password = "Password123!"
             };
 
             var response = await Client.PostAsJsonAsync(TestApiEndpoints.Users, request);
@@ -119,8 +116,7 @@ namespace PutZige.API.Tests.Controllers
                 Email = email,
                 Username = "hashuser",
                 DisplayName = "Hash User",
-                Password = plain,
-                ConfirmPassword = plain
+                Password = plain
             };
 
             var response = await Client.PostAsJsonAsync(TestApiEndpoints.Users, request);
@@ -156,8 +152,7 @@ namespace PutZige.API.Tests.Controllers
                 Email = email,
                 Username = "newuser",
                 DisplayName = "New User",
-                Password = "Password123!",
-                ConfirmPassword = "Password123!"
+                Password = "Password123!"
             };
 
             var response = await Client.PostAsJsonAsync(TestApiEndpoints.Users, request);
@@ -218,8 +213,7 @@ namespace PutZige.API.Tests.Controllers
                     Email = $"ratereg{i}@example.com",
                     Username = $"ratereg{i}",
                     DisplayName = "RegUser",
-                    Password = "Password1!",
-                    ConfirmPassword = "Password1!"
+                    Password = "Password1!"
                 };
 
                 await Client.PostAsJsonAsync(TestApiEndpoints.Users, req);
@@ -230,8 +224,7 @@ namespace PutZige.API.Tests.Controllers
                 Email = "ratereg-final@example.com",
                 Username = "ratereglast",
                 DisplayName = "RegUser",
-                Password = "Password1!",
-                ConfirmPassword = "Password1!"
+                Password = "Password1!"
             };
 
             var res = await Client.PostAsJsonAsync(TestApiEndpoints.Users, final);
@@ -251,8 +244,7 @@ namespace PutZige.API.Tests.Controllers
                     Email = $"disposable{i}@disposablemail.test",
                     Username = $"disp{i}",
                     DisplayName = "Disposable",
-                    Password = "Password1!",
-                    ConfirmPassword = "Password1!"
+                    Password = "Password1!"
                 };
 
                 var r = await Client.PostAsJsonAsync(TestApiEndpoints.Users, req);
@@ -263,8 +255,7 @@ namespace PutZige.API.Tests.Controllers
                 Email = "disposable-final@disposablemail.test",
                 Username = "disp-final",
                 DisplayName = "Disposable",
-                Password = "Password1!",
-                ConfirmPassword = "Password1!"
+                Password = "Password1!"
             });
 
             final.StatusCode.Should().BeOneOf(HttpStatusCode.Created, HttpStatusCode.TooManyRequests, HttpStatusCode.BadRequest);

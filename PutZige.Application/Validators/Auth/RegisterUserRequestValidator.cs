@@ -38,11 +38,6 @@ namespace PutZige.Application.Validators.Auth
                 .Matches(AppConstants.Validation.PasswordDigitRegex).WithMessage(ErrorMessages.Validation.PasswordMissingDigit)
                 .Matches(AppConstants.Validation.PasswordSpecialCharRegex).WithMessage(ErrorMessages.Validation.PasswordMissingSpecialChar)
                 .WithName("password");
-
-            RuleFor(x => x.ConfirmPassword)
-                .NotEmpty().WithMessage(ErrorMessages.Validation.ConfirmPasswordRequired)
-                .Equal(x => x.Password).WithMessage(ErrorMessages.Validation.PasswordsDoNotMatch)
-                .WithName("confirmPassword");
         }
     }
 }

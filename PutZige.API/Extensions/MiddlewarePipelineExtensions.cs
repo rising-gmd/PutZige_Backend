@@ -32,6 +32,9 @@ namespace PutZige.API.Extensions
 
             app.UseRouting();
 
+            // CORS must be applied after routing and before authentication/authorization
+            app.UseCorsConfiguration();
+
             app.UseHttpsRedirection();
 
             // Authentication must happen before rate limiting so rate limiter can use authenticated user id where available

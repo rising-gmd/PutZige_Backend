@@ -12,6 +12,5 @@ namespace PutZige.Application.DTOs.Auth
         public string? Username { get; init; }
         public string? DisplayName { get; init; }
         public string? Password { get; init; }
-        public string? ConfirmPassword { get; init; }
     }
 }
