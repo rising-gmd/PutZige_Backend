@@ -17,7 +17,6 @@ namespace PutZige.Application.Interfaces
         Task<RegisterUserResponse> RegisterUserAsync(
             string email,
             string username,
-            string displayName,
             string password,
             CancellationToken ct = default);
 

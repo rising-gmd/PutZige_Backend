@@ -17,7 +17,7 @@ namespace PutZige.Domain.Entities
 
         // Profile
         public string Username { get; set; } = null!;
-        public string DisplayName { get; set; } = null!;
+        public string? DisplayName { get; set; }
         public string? Bio { get; set; }
         public string? ProfilePictureUrl { get; set; }
 
