@@ -47,7 +47,6 @@ namespace PutZige.API.Tests.Controllers
             {
                 Email = "inttest@example.com",
                 Username = "intuser",
-                DisplayName = "Integration User",
                 Password = "Password123!"
             };
 
@@ -65,7 +64,6 @@ namespace PutZige.API.Tests.Controllers
             {
                 Email = "inttest2@example.com",
                 Username = "intuser2",
-                DisplayName = "Integration User 2",
                 Password = "Password123!"
             };
 
@@ -89,7 +87,6 @@ namespace PutZige.API.Tests.Controllers
             {
                 Email = email,
                 Username = "saveduser",
-                DisplayName = "Saved User",
                 Password = "Password123!"
             };
 
@@ -115,7 +112,6 @@ namespace PutZige.API.Tests.Controllers
             {
                 Email = email,
                 Username = "hashuser",
-                DisplayName = "Hash User",
                 Password = plain
             };
 
@@ -151,7 +147,6 @@ namespace PutZige.API.Tests.Controllers
             {
                 Email = email,
                 Username = "newuser",
-                DisplayName = "New User",
                 Password = "Password123!"
             };
 
@@ -212,7 +207,6 @@ namespace PutZige.API.Tests.Controllers
                 {
                     Email = $"ratereg{i}@example.com",
                     Username = $"ratereg{i}",
-                    DisplayName = "RegUser",
                     Password = "Password1!"
                 };
 
@@ -223,7 +217,6 @@ namespace PutZige.API.Tests.Controllers
             {
                 Email = "ratereg-final@example.com",
                 Username = "ratereglast",
-                DisplayName = "RegUser",
                 Password = "Password1!"
             };
 
@@ -243,7 +236,6 @@ namespace PutZige.API.Tests.Controllers
                 {
                     Email = $"disposable{i}@disposablemail.test",
                     Username = $"disp{i}",
-                    DisplayName = "Disposable",
                     Password = "Password1!"
                 };
 
@@ -254,7 +246,6 @@ namespace PutZige.API.Tests.Controllers
             {
                 Email = "disposable-final@disposablemail.test",
                 Username = "disp-final",
-                DisplayName = "Disposable",
                 Password = "Password1!"
             });
 

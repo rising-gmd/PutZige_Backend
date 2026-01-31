@@ -64,7 +64,6 @@ namespace PutZige.Application.Tests.Services
             // Arrange
             var email = _faker.Internet.Email();
             var username = _faker.Internet.UserName();
-            var displayName = _faker.Person.FullName;
             var password = _faker.Internet.Password(12);
 
             _mockUserRepository
@@ -93,19 +92,17 @@ namespace PutZige.Application.Tests.Services
                     UserId = u.Id,
                     Email = u.Email ?? string.Empty,
                     Username = u.Username ?? string.Empty,
-                    DisplayName = u.DisplayName ?? string.Empty,
                     IsEmailVerified = u.IsEmailVerified,
                     CreatedAt = u.CreatedAt
                 });
 
             // Act
-            var result = await _sut.RegisterUserAsync(email, username, displayName, password, _ct);
+            var result = await _sut.RegisterUserAsync(email, username, password, _ct);
 
             // Assert
             result.Should().NotBeNull();
             result.Email.Should().Be(email);
             result.Username.Should().Be(username);
-            result.DisplayName.Should().Be(displayName);
 
             _mockUserRepository.Verify(x => x.IsEmailTakenAsync(email, It.IsAny<CancellationToken>()), Times.Once);
             _mockUserRepository.Verify(x => x.IsUsernameTakenAsync(username, It.IsAny<CancellationToken>()), Times.Once);
@@ -115,7 +112,6 @@ namespace PutZige.Application.Tests.Services
             capturedUser.Should().NotBeNull();
             capturedUser!.Email.Should().Be(email);
             capturedUser.Username.Should().Be(username);
-            capturedUser.DisplayName.Should().Be(displayName);
             capturedUser.IsEmailVerified.Should().BeFalse();
             capturedUser.EmailVerificationToken.Should().NotBeNullOrWhiteSpace();
             capturedUser.EmailVerificationTokenExpiry.Should().BeAfter(DateTime.UtcNow);
@@ -130,7 +126,6 @@ namespace PutZige.Application.Tests.Services
             // Arrange
             var email = _faker.Internet.Email();
             var username = _faker.Internet.UserName();
-            var displayName = _faker.Person.FullName;
             var password = _faker.Internet.Password(12);
 
             _mockUserRepository.Setup(x => x.IsEmailTakenAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
@@ -147,13 +142,12 @@ namespace PutZige.Application.Tests.Services
                 UserId = u.Id,
                 Email = u.Email ?? string.Empty,
                 Username = u.Username ?? string.Empty,
-                DisplayName = u.DisplayName ?? string.Empty,
                 IsEmailVerified = u.IsEmailVerified,
                 CreatedAt = u.CreatedAt
             });
 
             // Act
-            var result = await _sut.RegisterUserAsync(email, username, displayName, password, _ct);
+            var result = await _sut.RegisterUserAsync(email, username, password, _ct);
 
             // Assert
             capturedUser.Should().NotBeNull();
@@ -171,7 +165,6 @@ namespace PutZige.Application.Tests.Services
             // Arrange
             var email = _faker.Internet.Email();
             var username = _faker.Internet.UserName();
-            var displayName = _faker.Person.FullName;
             var password = _faker.Internet.Password(12);
 
             _mockUserRepository.Setup(x => x.IsEmailTakenAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
@@ -188,13 +181,12 @@ namespace PutZige.Application.Tests.Services
                 UserId = u.Id,
                 Email = u.Email ?? string.Empty,
                 Username = u.Username ?? string.Empty,
-                DisplayName = u.DisplayName ?? string.Empty,
                 IsEmailVerified = u.IsEmailVerified,
                 CreatedAt = u.CreatedAt
             });
 
             // Act
-            var result = await _sut.RegisterUserAsync(email, username, displayName, password, _ct);
+            var result = await _sut.RegisterUserAsync(email, username, password, _ct);
 
             // Assert
             capturedUser.Should().NotBeNull();
@@ -218,7 +210,6 @@ namespace PutZige.Application.Tests.Services
             // Arrange
             var email = _faker.Internet.Email();
             var username = _faker.Internet.UserName();
-            var displayName = _faker.Person.FullName;
             var password = _faker.Internet.Password(12);
 
             _mockUserRepository.Setup(x => x.IsEmailTakenAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
@@ -231,13 +222,12 @@ namespace PutZige.Application.Tests.Services
                 UserId = u.Id,
                 Email = u.Email ?? string.Empty,
                 Username = u.Username ?? string.Empty,
-                DisplayName = u.DisplayName ?? string.Empty,
                 IsEmailVerified = u.IsEmailVerified,
                 CreatedAt = u.CreatedAt
             });
 
             // Act
-            var result = await _sut.RegisterUserAsync(email, username, displayName, password, _ct);
+            var result = await _sut.RegisterUserAsync(email, username, password, _ct);
 
             // Assert
             _mockUserRepository.Verify(x => x.AddAsync(It.Is<User>(u => u.Email == email && u.Username == username), It.IsAny<CancellationToken>()), Times.Once);
@@ -253,7 +243,6 @@ namespace PutZige.Application.Tests.Services
             // Arrange
             var email = _faker.Internet.Email();
             var username = _faker.Internet.UserName();
-            var displayName = _faker.Person.FullName;
             var password = _faker.Internet.Password(12);
 
             _mockUserRepository.Setup(x => x.IsEmailTakenAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
@@ -267,7 +256,6 @@ namespace PutZige.Application.Tests.Services
                 UserId = Guid.NewGuid(),
                 Email = email,
                 Username = username,
-                DisplayName = displayName,
                 IsEmailVerified = false,
                 CreatedAt = DateTime.UtcNow
             };
@@ -275,14 +263,13 @@ namespace PutZige.Application.Tests.Services
             _mockMapper.Setup(m => m.Map<RegisterUserResponse>(It.IsAny<User>())).Returns(responseReturned);
 
             // Act
-            var result = await _sut.RegisterUserAsync(email, username, displayName, password, _ct);
+            var result = await _sut.RegisterUserAsync(email, username, password, _ct);
 
             // Assert
             _mockMapper.Verify(m => m.Map<RegisterUserResponse>(It.IsAny<User>()), Times.Once);
             result.Should().NotBeNull();
             result.Email.Should().Be(responseReturned.Email);
             result.Username.Should().Be(responseReturned.Username);
-            result.DisplayName.Should().Be(responseReturned.DisplayName);
             result.UserId.Should().Be(responseReturned.UserId);
         }
 
@@ -295,13 +282,12 @@ namespace PutZige.Application.Tests.Services
             // Arrange
             var email = _faker.Internet.Email();
             var username = _faker.Internet.UserName();
-            var displayName = _faker.Person.FullName;
             var password = _faker.Internet.Password(12);
 
             _mockUserRepository.Setup(x => x.IsEmailTakenAsync(email, It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
             // Act
-            Func<Task> act = async () => await _sut.RegisterUserAsync(email, username, displayName, password, _ct);
+            Func<Task> act = async () => await _sut.RegisterUserAsync(email, username, password, _ct);
 
             // Assert
             await act.Should().ThrowAsync<InvalidOperationException>().WithMessage(ErrorMessages.Authentication.EmailAlreadyTaken);
@@ -321,14 +307,13 @@ namespace PutZige.Application.Tests.Services
             // Arrange
             var email = _faker.Internet.Email();
             var username = _faker.Internet.UserName();
-            var displayName = _faker.Person.FullName;
             var password = _faker.Internet.Password(12);
 
             _mockUserRepository.Setup(x => x.IsEmailTakenAsync(email, It.IsAny<CancellationToken>())).ReturnsAsync(false);
             _mockUserRepository.Setup(x => x.IsUsernameTakenAsync(username, It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
             // Act
-            Func<Task> act = async () => await _sut.RegisterUserAsync(email, username, displayName, password, _ct);
+            Func<Task> act = async () => await _sut.RegisterUserAsync(email, username, password, _ct);
 
             // Assert
             await act.Should().ThrowAsync<InvalidOperationException>().WithMessage(ErrorMessages.Authentication.UsernameAlreadyTaken);
@@ -348,11 +333,10 @@ namespace PutZige.Application.Tests.Services
             // Arrange
             string? email = null;
             var username = _faker.Internet.UserName();
-            var displayName = _faker.Person.FullName;
             var password = _faker.Internet.Password(12);
 
             // Act
-            Func<Task> act = async () => await _sut.RegisterUserAsync(email!, username, displayName, password, _ct);
+            Func<Task> act = async () => await _sut.RegisterUserAsync(email!, username, password, _ct);
 
             // Assert
             await act.Should().ThrowAsync<ArgumentException>().WithMessage(ErrorMessages.Validation.EmailRequired + "*");
@@ -373,7 +357,7 @@ namespace PutZige.Application.Tests.Services
             var password = _faker.Internet.Password(12);
 
             // Act
-            Func<Task> act = async () => await _sut.RegisterUserAsync(email, username, displayName, password, _ct);
+            Func<Task> act = async () => await _sut.RegisterUserAsync(email, username, password, _ct);
 
             // Assert
             await act.Should().ThrowAsync<ArgumentException>().WithMessage(ErrorMessages.Validation.UsernameRequired + "*");
@@ -391,10 +375,9 @@ namespace PutZige.Application.Tests.Services
             var email = _faker.Internet.Email();
             var username = _faker.Internet.UserName();
             string? password = null;
-            var displayName = _faker.Person.FullName;
-
+    
             // Act
-            Func<Task> act = async () => await _sut.RegisterUserAsync(email, username, displayName, password!, _ct);
+            Func<Task> act = async () => await _sut.RegisterUserAsync(email, username, password!, _ct);
 
             // Assert
             await act.Should().ThrowAsync<ArgumentException>().WithMessage(ErrorMessages.Validation.PasswordRequired + "*");

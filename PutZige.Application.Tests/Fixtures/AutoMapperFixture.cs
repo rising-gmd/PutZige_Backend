@@ -18,7 +18,6 @@ namespace PutZige.Application.Tests.Fixtures
                     .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.Id))
                     .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email))
                     .ForMember(dest => dest.Username, opt => opt.MapFrom(src => src.Username))
-                    .ForMember(dest => dest.DisplayName, opt => opt.MapFrom(src => src.DisplayName))
                     .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt))
                     .ForMember(dest => dest.IsEmailVerified, opt => opt.MapFrom(src => src.IsEmailVerified));
             });

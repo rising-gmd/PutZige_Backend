@@ -11,7 +11,6 @@ namespace PutZige.Application.DTOs.Auth
         public required Guid UserId { get; init; }
         public required string Email { get; init; }
         public required string Username { get; init; }
-        public required string DisplayName { get; init; }
         public required bool IsEmailVerified { get; init; }
         public required DateTime CreatedAt { get; init; }
     }
