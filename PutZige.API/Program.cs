@@ -1,23 +1,56 @@
-var builder = WebApplication.CreateBuilder(args);
+using FluentValidation.AspNetCore;
+using Microsoft.OpenApi;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using PutZige.API.Configuration;
+using PutZige.API.Filters;
+using PutZige.API.Middleware;
+using PutZige.Application;
+using PutZige.Infrastructure;
+using PutZige.Application.Settings;
+using Serilog;
+using PutZige.API.Extensions;
 
-// Add services to the container.
+// Bootstrap logger for startup errors
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateLogger();
 
-builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
-
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+try
 {
-    app.MapOpenApi();
+    Log.Information("Starting PutZige API");
+
+    var builder = WebApplication.CreateBuilder(args);
+
+    // Configure logging
+    builder.ConfigureLogging();
+
+    // Services
+    builder.Services.AddApiConfiguration();
+    builder.Services.AddSwaggerConfiguration();
+    builder.Services.AddAuthenticationConfiguration(builder.Configuration);
+    builder.Services.AddCorsConfiguration(builder.Configuration, builder.Environment);
+    builder.Services.AddApplicationServices();
+    builder.Services.AddInfrastructureServices(builder.Configuration, builder.Environment);
+    builder.Services.AddRateLimitingConfiguration(builder.Configuration);
+    builder.Services.AddSignalRConfiguration(builder.Configuration);
+
+    var app = builder.Build();
+
+    // Middleware pipeline
+    app.ConfigureMiddlewarePipeline();
+
+    app.MapSignalRHubs();
+
+    Log.Information("Application starting");
+    app.Run();
 }
-
-app.UseHttpsRedirection();
-
-app.UseAuthorization();
-
-app.MapControllers();
-
-app.Run();
+catch (Exception ex) when (ex is not HostAbortedException)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

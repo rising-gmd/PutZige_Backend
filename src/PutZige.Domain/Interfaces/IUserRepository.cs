@@ -1,0 +1,33 @@
+// File: src/PutZige.Domain/Interfaces/IUserRepository.cs
+using System.Threading;
+using System.Threading.Tasks;
+using PutZige.Domain.Entities;
+
+namespace PutZige.Domain.Interfaces
+{
+    /// <summary>
+    /// User-specific repository interface.
+    /// </summary>
+    public interface IUserRepository : IRepository<User>
+    {
+        /// <summary>
+        /// Gets a user by email.
+        /// </summary>
+        Task<User?> GetByEmailAsync(string email, CancellationToken ct = default);
+
+        /// <summary>
+        /// Gets a user by username.
+        /// </summary>
+        Task<User?> GetByUsernameAsync(string username, CancellationToken ct = default);
+
+        /// <summary>
+        /// Checks if an email is already taken.
+        /// </summary>
+        Task<bool> IsEmailTakenAsync(string email, CancellationToken ct = default);
+
+        /// <summary>
+        /// Checks if a username is already taken.
+        /// </summary>
+        Task<bool> IsUsernameTakenAsync(string username, CancellationToken ct = default);
+    }
+}
