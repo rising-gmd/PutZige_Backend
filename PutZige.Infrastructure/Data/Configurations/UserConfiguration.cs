@@ -25,7 +25,7 @@ namespace PutZige.Infrastructure.Data.Configurations
             // Profile
             builder.Property(u => u.Username).IsRequired().HasMaxLength(AppConstants.Validation.MaxUsernameLength); // 50
             builder.HasIndex(u => u.Username).IsUnique();
-            builder.Property(u => u.DisplayName).IsRequired().HasMaxLength(AppConstants.Validation.MaxDisplayNameLength); // 100
+            builder.Property(u => u.DisplayName).HasMaxLength(AppConstants.Validation.MaxDisplayNameLength); // 100
             builder.Property(u => u.Bio).HasMaxLength(AppConstants.Validation.MaxShortTextLength); // 500
             builder.Property(u => u.ProfilePictureUrl).HasMaxLength(AppConstants.Validation.MaxUrlLength); // 2048
 
