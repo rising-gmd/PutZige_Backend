@@ -25,11 +25,6 @@ namespace PutZige.Application.Validators.Auth
                 .Matches(AppConstants.Validation.UsernameRegexPattern).WithMessage(ErrorMessages.Validation.UsernameInvalidCharacters)
                 .WithName("username");
 
-            RuleFor(x => x.DisplayName)
-                .NotEmpty().WithMessage(ErrorMessages.Validation.DisplayNameRequired)
-                .Length(AppConstants.Validation.MinDisplayNameLength, AppConstants.Validation.MaxDisplayNameLength).WithMessage(ErrorMessages.Validation.DisplayNameInvalidLength)
-                .WithName("displayName");
-
             RuleFor(x => x.Password)
                 .NotEmpty().WithMessage(ErrorMessages.Validation.PasswordRequired)
                 .MinimumLength(AppConstants.Validation.MinPasswordLength).WithMessage(ErrorMessages.Validation.PasswordTooShort)
