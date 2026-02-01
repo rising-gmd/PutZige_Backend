@@ -55,6 +55,13 @@ public class UserRepository : Repository<User>, IUserRepository
     }
 
     /// <inheritdoc/>
+    public async Task<User?> GetByUsernameWithSessionAsync(string username, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(username)) throw new ArgumentException("username is required", nameof(username));
+        return await _dbSet.Include(u => u.Session).FirstOrDefaultAsync(u => u.Username == username, ct).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc/>
     public async Task<User?> GetByRefreshTokenAsync(string refreshToken, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(refreshToken)) return null;

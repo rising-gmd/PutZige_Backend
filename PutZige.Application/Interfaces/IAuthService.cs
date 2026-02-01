@@ -7,7 +7,7 @@ namespace PutZige.Application.Interfaces
 {
     public interface IAuthService
     {
-        Task<LoginResponse> LoginAsync(string email, string password, CancellationToken ct = default);
+        Task<LoginResponse> LoginAsync(string identifier, string password, CancellationToken ct = default);
         Task<RefreshTokenResponse> RefreshTokenAsync(string refreshToken, CancellationToken ct = default);
     }
 }

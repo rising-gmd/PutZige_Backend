@@ -43,6 +43,63 @@ namespace PutZige.Application.Tests.Services
         }
 
         /// <summary>
+        /// Valid username login returns login response and calls username lookup.
+        /// </summary>
+        [Fact]
+        public async Task LoginAsync_ValidUsername_ReturnsLoginResponse()
+        {
+            // Arrange
+            var username = "user1";
+            var password = "Password123!";
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = "user@test.com",
+                Username = username,
+                DisplayName = "User One",
+                PasswordHash = "hash-Password123!",
+                PasswordSalt = "salt-Password123!",
+                IsActive = true,
+                IsEmailVerified = true
+            };
+
+            _userRepo.Setup(x => x.GetByUsernameWithSessionAsync(username, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+            _uow.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+            var svc = new AuthService(_userRepo.Object, _uow.Object, CreateJwtService(), _userService.Object, _mapper.Object, Options.Create(_jwtSettings), _mockClientInfo.Object, _mockHashingService.Object, _logger.Object);
+
+            // Act
+            var result = await svc.LoginAsync(username, password, CancellationToken.None);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.AccessToken.Should().NotBeNullOrWhiteSpace();
+            result.RefreshToken.Should().NotBeNullOrWhiteSpace();
+            result.Username.Should().Be(username);
+            _userRepo.Verify(x => x.GetByUsernameWithSessionAsync(username, It.IsAny<CancellationToken>()), Times.Once);
+            _uow.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+        }
+
+        /// <summary>
+        /// Non-existent username input returns invalid credentials.
+        /// </summary>
+        [Fact]
+        public async Task LoginAsync_NonExistentUsername_ThrowsInvalidOperationException()
+        {
+            // Arrange
+            var username = "nouser";
+            _userRepo.Setup(x => x.GetByUsernameWithSessionAsync(username, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
+
+            var svc = new AuthService(_userRepo.Object, _uow.Object, CreateJwtService(), _userService.Object, _mapper.Object, Options.Create(_jwtSettings), _mockClientInfo.Object, _mockHashingService.Object, _logger.Object);
+
+            // Act
+            Func<Task> act = async () => await svc.LoginAsync(username, "any", CancellationToken.None);
+
+            // Assert
+            await act.Should().ThrowAsync<InvalidOperationException>().WithMessage(ErrorMessages.Authentication.InvalidCredentials + "*");
+        }
+
+        /// <summary>
         /// Valid credentials produce access and refresh tokens and persist session changes.
         /// </summary>
         [Fact]
