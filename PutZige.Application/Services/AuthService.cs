@@ -49,31 +49,33 @@ namespace PutZige.Application.Services
             _hashingService = hashingService;
         }
 
-        public async Task<LoginResponse> LoginAsync(string email, string password, CancellationToken ct = default)
+        public async Task<LoginResponse> LoginAsync(string identifier, string password, CancellationToken ct = default)
         {
-            if (string.IsNullOrWhiteSpace(email)) throw new ArgumentException("email is required", nameof(email));
+            if (string.IsNullOrWhiteSpace(identifier)) throw new ArgumentException(ErrorMessages.Validation.IdentifierRequired, nameof(identifier));
 
-            if (string.IsNullOrWhiteSpace(password)) throw new ArgumentException("password is required", nameof(password));
+            if (string.IsNullOrWhiteSpace(password)) throw new ArgumentException(ErrorMessages.Validation.PasswordRequired, nameof(password));
 
-            _logger?.LogInformation("Login attempt - Email: {Email}", email);
+            _logger?.LogInformation("Login attempt - Identifier: {Identifier}", identifier);
 
-            var user = await _userRepository.GetByEmailWithSessionAsync(email, ct);
+            var user = identifier.Contains('@')
+                ? await _userRepository.GetByEmailWithSessionAsync(identifier, ct)
+                : await _userRepository.GetByUsernameWithSessionAsync(identifier, ct);
 
             if (user == null)
             {
-                _logger?.LogWarning("Login failed - Non-existent email: {Email}", email);
+                _logger?.LogWarning("Login failed - Non-existent identifier: {Identifier}", identifier);
                 throw new InvalidOperationException(ErrorMessages.Authentication.InvalidCredentials);
             }
 
             if (!user.IsActive)
             {
-                _logger?.LogWarning("Login failed - Inactive account: {Email}", email);
+                _logger?.LogWarning("Login failed - Inactive account: {Identifier}", identifier);
                 throw new InvalidOperationException(ErrorMessages.Authentication.AccountInactive);
             }
 
             if (!user.IsEmailVerified)
             {
-                _logger?.LogWarning("Login failed - Email not verified: {Email}", email);
+                _logger?.LogWarning("Login failed - Email not verified: {Identifier}", identifier);
                 throw new InvalidOperationException(ErrorMessages.Authentication.EmailNotVerified);
             }
 
@@ -84,11 +86,11 @@ namespace PutZige.Application.Services
                 user.LockedUntil = null;
                 user.FailedLoginAttempts = 0;
                 user.LastFailedLoginAttempt = null;
-                _logger?.LogInformation("Account auto-unlocked: {Email}", email);
+                _logger?.LogInformation("Account auto-unlocked: {Identifier}", identifier);
             }
             else if (user.IsLocked)
             {
-                _logger?.LogWarning("Login failed - Account locked: {Email}", email);
+                _logger?.LogWarning("Login failed - Account locked: {Identifier}", identifier);
                 throw new InvalidOperationException(ErrorMessages.Authentication.AccountLocked);
             }
 
@@ -103,12 +105,12 @@ namespace PutZige.Application.Services
                 {
                     user.IsLocked = true;
                     user.LockedUntil = DateTime.UtcNow.AddMinutes(AppConstants.Security.LockoutMinutes);
-                    _logger?.LogWarning("Account locked due to {Attempts} failed attempts: {Email}", user.FailedLoginAttempts, email);
+                    _logger?.LogWarning("Account locked due to {Attempts} failed attempts: {Identifier}", user.FailedLoginAttempts, identifier);
                 }
                 else
                 {
-                    _logger?.LogWarning("Login failed - Invalid credentials (Attempt {Attempts}/{Max}): {Email}",
-                        user.FailedLoginAttempts, AppConstants.Security.MaxLoginAttempts, email);
+                    _logger?.LogWarning("Login failed - Invalid credentials (Attempt {Attempts}/{Max}): {Identifier}",
+                        user.FailedLoginAttempts, AppConstants.Security.MaxLoginAttempts, identifier);
                 }
 
                 await _unitOfWork.SaveChangesAsync(ct);

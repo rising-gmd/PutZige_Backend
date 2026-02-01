@@ -32,7 +32,7 @@ namespace PutZige.Infrastructure.Services
         /// </summary>
         public async Task<HashedValue> HashAsync(string plainText, CancellationToken ct = default)
         {
-            if (string.IsNullOrEmpty(plainText)) throw new ArgumentException("plainText must be provided", nameof(plainText));
+            if (string.IsNullOrEmpty(plainText)) throw new ArgumentException(PutZige.Application.Common.Messages.ErrorMessages.Validation.PlainTextRequired, nameof(plainText));
 
             ct.ThrowIfCancellationRequested();
 
@@ -57,9 +57,9 @@ namespace PutZige.Infrastructure.Services
         /// </summary>
         public async Task<bool> VerifyAsync(string plainText, string hash, string salt, CancellationToken ct = default)
         {
-            if (string.IsNullOrEmpty(plainText)) throw new ArgumentException("plainText must be provided", nameof(plainText));
-            if (string.IsNullOrEmpty(hash)) throw new ArgumentException("hash must be provided", nameof(hash));
-            if (string.IsNullOrEmpty(salt)) throw new ArgumentException("salt must be provided", nameof(salt));
+            if (string.IsNullOrEmpty(plainText)) throw new ArgumentException(PutZige.Application.Common.Messages.ErrorMessages.Validation.PlainTextRequired, nameof(plainText));
+            if (string.IsNullOrEmpty(hash)) throw new ArgumentException(PutZige.Application.Common.Messages.ErrorMessages.Validation.HashRequired, nameof(hash));
+            if (string.IsNullOrEmpty(salt)) throw new ArgumentException(PutZige.Application.Common.Messages.ErrorMessages.Validation.SaltRequired, nameof(salt));
 
             ct.ThrowIfCancellationRequested();
 
