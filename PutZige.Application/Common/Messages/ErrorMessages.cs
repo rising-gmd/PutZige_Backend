@@ -20,6 +20,10 @@ namespace PutZige.Application.Common.Messages
         {
             public const string ValidationFailed = "Validation failed. Please check your input.";
             public const string EmailRequired = "Email is required.";
+            public const string IdentifierRequired = "Username or email is required.";
+            public const string PlainTextRequired = "Value is required.";
+            public const string HashRequired = "Hash is required.";
+            public const string SaltRequired = "Salt is required.";
             public const string EmailInvalidFormat = "Invalid email format.";
             public const string EmailTooLong = "Email cannot exceed 255 characters.";
 

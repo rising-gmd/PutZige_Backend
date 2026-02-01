@@ -49,10 +49,10 @@ namespace PutZige.API.Tests.Integration.RateLimiting
 
             for (int i = 0; i < 6; i++)
             {
-                var r = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Email = email, Password = "Wrong" });
+                var r = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Identifier = email, Password = "Wrong" });
             }
 
-            var res = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Email = email, Password = "Wrong" });
+            var res = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Identifier = email, Password = "Wrong" });
             res.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
         }
 
@@ -71,11 +71,11 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             {
                 var c = Factory.CreateClient();
                 c.DefaultRequestHeaders.Add("X-Forwarded-For", $"203.0.113.{i}");
-                await c.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Email = email, Password = "Wrong" });
+                await c.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Identifier = email, Password = "Wrong" });
             }
 
             // If distributed protection exists, should still block or at least log; assert no crash and responses returned
-            var final = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Email = email, Password = "Wrong" });
+            var final = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Identifier = email, Password = "Wrong" });
             final.StatusCode.Should().BeOneOf(HttpStatusCode.BadRequest, HttpStatusCode.TooManyRequests);
         }
 
@@ -85,9 +85,9 @@ namespace PutZige.API.Tests.Integration.RateLimiting
         [Fact]
         public async Task Security_AccountEnumeration_ResponseTimingConsistent()
         {
-            var exists = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Email = "noexist@example.com", Password = "x" });
+            var exists = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Identifier = "noexist@example.com", Password = "x" });
             var sw = System.Diagnostics.Stopwatch.StartNew();
-            var exists2 = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Email = "sec2@example.com", Password = "Wrong" });
+            var exists2 = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Identifier = "sec2@example.com", Password = "Wrong" });
             sw.Stop();
             // Ensure timings are within reasonable bounds to avoid enumeration via response time
             sw.ElapsedMilliseconds.Should().BeLessThan(500);
@@ -102,7 +102,7 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             var c = Factory.CreateClient();
             var request = new HttpRequestMessage(HttpMethod.Post, TestApiEndpoints.AuthLogin)
             {
-                Content = JsonContent.Create(new LoginRequest { Email = "x@x.com", Password = "x" })
+                Content = JsonContent.Create(new LoginRequest { Identifier = "x@x.com", Password = "x" })
             };
             // Use TryAddWithoutValidation to avoid header validation exceptions in HttpClient
             request.Headers.TryAddWithoutValidation("X-Forwarded-For", "198.51.100.1, malicious@inject\nContent-Length:0");
@@ -116,7 +116,7 @@ namespace PutZige.API.Tests.Integration.RateLimiting
         [Fact]
         public async Task Security_SQLInjectionInUserId_Sanitized()
         {
-            var payload = new LoginRequest { Email = "' OR 1=1;--@example.com", Password = "x" };
+            var payload = new LoginRequest { Identifier = "' OR 1=1;--@example.com", Password = "x" };
             var res = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, payload);
             res.StatusCode.Should().BeOneOf(HttpStatusCode.BadRequest, HttpStatusCode.OK, HttpStatusCode.TooManyRequests);
         }
@@ -130,7 +130,7 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             var c = Factory.CreateClient();
             var request = new HttpRequestMessage(HttpMethod.Post, TestApiEndpoints.AuthLogin)
             {
-                Content = JsonContent.Create(new LoginRequest { Email = "x@x.com", Password = "x" })
+                Content = JsonContent.Create(new LoginRequest { Identifier = "x@x.com", Password = "x" })
             };
             request.Headers.TryAddWithoutValidation("X-Forwarded-For", "<script>alert(1)</script>");
             var res = await c.SendAsync(request);
@@ -147,11 +147,11 @@ namespace PutZige.API.Tests.Integration.RateLimiting
             {
                 var email = $"spray{i}@example.com";
                 await SeedUserAsync(email, "Password1!");
-                var r = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Email = email, Password = "Password1!" });
+                var r = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Identifier = email, Password = "Password1!" });
             }
 
             // Ensure no crashes and responses returned
-            var final = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Email = "spray0@example.com", Password = "Wrong" });
+            var final = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Identifier = "spray0@example.com", Password = "Wrong" });
             final.StatusCode.Should().BeOneOf(HttpStatusCode.BadRequest, HttpStatusCode.TooManyRequests);
         }
     }

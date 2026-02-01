@@ -31,7 +31,7 @@ namespace PutZige.API.Controllers
         [EnableRateLimiting("login")]
         public async Task<ActionResult<ApiResponse<LoginResponse>>> Login([FromBody] LoginRequest request, CancellationToken ct)
         {
-            var response = await _authService.LoginAsync(request.Email, request.Password, ct);
+            var response = await _authService.LoginAsync(request.Identifier, request.Password, ct);
             return Ok(ApiResponse<LoginResponse>.Success(response, SuccessMessages.Authentication.LoginSuccessful));
         }
 

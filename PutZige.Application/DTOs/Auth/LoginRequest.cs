@@ -8,7 +8,7 @@ namespace PutZige.Application.DTOs.Auth
     /// </summary>
     public sealed class LoginRequest
     {
-        public string Email { get; init; } = string.Empty;
+        public string Identifier { get; init; } = string.Empty;
         public string Password { get; init; } = string.Empty;
     }
 }

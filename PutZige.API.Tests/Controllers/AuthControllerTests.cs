@@ -64,7 +64,7 @@ namespace PutZige.API.Tests.Controllers
                 await db.SaveChangesAsync();
             }
 
-            var request = new LoginRequest { Email = email, Password = password };
+            var request = new LoginRequest { Identifier = email, Password = password };
             var response = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, request);
 
             response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -94,7 +94,7 @@ namespace PutZige.API.Tests.Controllers
                 await db.SaveChangesAsync();
             }
 
-            var request = new LoginRequest { Email = email, Password = "WrongPass!" };
+            var request = new LoginRequest { Identifier = email, Password = "WrongPass!" };
             var response = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, request);
 
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -116,7 +116,7 @@ namespace PutZige.API.Tests.Controllers
             var result = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
             result.Should().NotBeNull();
             result!.Errors.Should().NotBeNull();
-            result.Errors!.Should().ContainKey("email");
+            result.Errors!.Should().ContainKey("identifier");
             result.Errors.Should().ContainKey("password");
         }
 
@@ -137,7 +137,7 @@ namespace PutZige.API.Tests.Controllers
                 await db.SaveChangesAsync();
             }
 
-            var request = new LoginRequest { Email = email, Password = password };
+            var request = new LoginRequest { Identifier = email, Password = password };
             var response = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, request);
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
             var payload = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
@@ -162,7 +162,7 @@ namespace PutZige.API.Tests.Controllers
                 await db.SaveChangesAsync();
             }
 
-            var request = new LoginRequest { Email = email, Password = password };
+            var request = new LoginRequest { Identifier = email, Password = password };
             var response = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, request);
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
             var payload = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
@@ -263,10 +263,10 @@ namespace PutZige.API.Tests.Controllers
 
             for (int i = 0; i < 6; i++)
             {
-                var r = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Email = email, Password = "Wrong" });
+                var r = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Identifier = email, Password = "Wrong" });
             }
 
-            var final = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Email = email, Password = "Wrong" });
+            var final = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Identifier = email, Password = "Wrong" });
             final.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
         }
 
@@ -288,10 +288,10 @@ namespace PutZige.API.Tests.Controllers
 
             for (int i = 0; i < 6; i++)
             {
-                await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Email = email, Password = "Wrong" });
+                await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Identifier = email, Password = "Wrong" });
             }
 
-            var final = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Email = email, Password = "Wrong" });
+            var final = await Client.PostAsJsonAsync(TestApiEndpoints.AuthLogin, new LoginRequest { Identifier = email, Password = "Wrong" });
             final.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
             var payload = await final.Content.ReadFromJsonAsync<ApiResponse<object>>();
             payload.Should().NotBeNull();

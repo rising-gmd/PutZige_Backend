@@ -18,7 +18,7 @@ namespace PutZige.Application.Tests.Validators
         [Fact]
         public async Task Validate_ValidData_PassesValidation()
         {
-            var model = new LoginRequest { Email = "user@test.com", Password = "Password1!" };
+            var model = new LoginRequest { Identifier = "user@test.com", Password = "Password1!" };
             var result = await _validator.ValidateAsync(model);
             result.IsValid.Should().BeTrue();
         }
@@ -29,10 +29,10 @@ namespace PutZige.Application.Tests.Validators
         [Fact]
         public async Task Validate_EmptyEmail_FailsValidation()
         {
-            var model = new LoginRequest { Email = "", Password = "Password1!" };
+            var model = new LoginRequest { Identifier = "", Password = "Password1!" };
             var result = await _validator.ValidateAsync(model);
             result.IsValid.Should().BeFalse();
-            result.Errors.Should().Contain(e => e.PropertyName.Equals("email", System.StringComparison.OrdinalIgnoreCase) || e.ErrorMessage == ErrorMessages.Validation.EmailRequired);
+            result.Errors.Should().Contain(e => e.PropertyName.Equals("identifier", System.StringComparison.OrdinalIgnoreCase) || e.ErrorMessage == ErrorMessages.Validation.EmailRequired);
         }
 
         /// <summary>
@@ -41,10 +41,10 @@ namespace PutZige.Application.Tests.Validators
         [Fact]
         public async Task Validate_InvalidEmailFormat_FailsValidation()
         {
-            var model = new LoginRequest { Email = "not-email", Password = "Password1!" };
+            var model = new LoginRequest { Identifier = "not-email", Password = "Password1!" };
             var result = await _validator.ValidateAsync(model);
             result.IsValid.Should().BeFalse();
-            result.Errors.Should().Contain(e => e.PropertyName.Equals("email", System.StringComparison.OrdinalIgnoreCase) || e.ErrorMessage == ErrorMessages.Validation.EmailInvalidFormat);
+            result.Errors.Should().Contain(e => e.PropertyName.Equals("identifier", System.StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace PutZige.Application.Tests.Validators
         [Fact]
         public async Task Validate_EmptyPassword_FailsValidation()
         {
-            var model = new LoginRequest { Email = "user@test.com", Password = "" };
+            var model = new LoginRequest { Identifier = "user@test.com", Password = "" };
             var result = await _validator.ValidateAsync(model);
             result.IsValid.Should().BeFalse();
             result.Errors.Should().Contain(e => e.PropertyName.Equals("password", System.StringComparison.OrdinalIgnoreCase) || e.ErrorMessage == ErrorMessages.Validation.PasswordRequired);
