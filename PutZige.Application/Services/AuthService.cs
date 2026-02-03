@@ -49,6 +49,8 @@ namespace PutZige.Application.Services
             _jwtSettings = jwtOptions.Value;
             _clientInfoService = clientInfoService;
             _hashingService = hashingService;
+            // Ensure a background job dispatcher is always available to avoid null refs when enqueueing jobs
+            _backgroundJobDispatcher = backgroundJobDispatcher ?? new NoOpBackgroundJobDispatcher();
         }
 
         public async Task<bool> VerifyEmailAsync(string email, string token, CancellationToken ct = default)
@@ -64,7 +66,7 @@ namespace PutZige.Application.Services
             if (string.IsNullOrWhiteSpace(user.EmailVerificationToken) || user.EmailVerificationToken != token)
                 throw new InvalidOperationException(ErrorMessages.Email.TokenInvalid);
 
-            if (!user.EmailVerificationTokenExpiry.HasValue || user.EmailVerificationTokenExpiry.Value < DateTime.UtcNow)
+            if (!user.EmailVerificationTokenExpiry.HasValue || user.EmailVerificationTokenExpiry.Value <= DateTime.UtcNow)
                 throw new InvalidOperationException(ErrorMessages.Email.TokenExpired);
 
             user.IsEmailVerified = true;

@@ -30,7 +30,27 @@ public sealed class EmailService : IEmailService
     {
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress(_settings.FromName ?? "", _settings.FromEmail));
-        message.To.Add(MailboxAddress.Parse(toEmail));
+
+        // Validate recipient email early to provide consistent exceptions and avoid attempting SMTP operations
+        if (toEmail is null)
+        {
+            throw new ArgumentNullException(nameof(toEmail));
+        }
+
+        if (string.IsNullOrWhiteSpace(toEmail))
+        {
+            throw new ArgumentException("toEmail is required", nameof(toEmail));
+        }
+
+        // Basic email format sanity check to fail fast for clearly invalid values
+        if (!toEmail.Contains('@'))
+        {
+            throw new FormatException("Invalid email address format.");
+        }
+
+        // Rely on MailboxAddress.Parse to validate full format and throw FormatException for invalid inputs
+        var mailbox = MailboxAddress.Parse(toEmail);
+        message.To.Add(mailbox);
         message.Subject = "Please verify your email";
 
         var bodyHtml = await BuildVerificationHtmlAsync(username, verificationToken, ct).ConfigureAwait(false);
