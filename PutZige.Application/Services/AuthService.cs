@@ -3,7 +3,6 @@ using AutoMapper;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PutZige.Application.Common;
-using PutZige.Application.Common.Constants;
 using PutZige.Application.Common.Messages;
 using PutZige.Application.DTOs.Auth;
 using PutZige.Application.Interfaces;
@@ -27,9 +26,8 @@ namespace PutZige.Application.Services
         private readonly JwtSettings _jwtSettings;
         private readonly IClientInfoService _clientInfoService;
         private readonly IHashingService _hashingService;
-        private readonly IBackgroundJobDispatcher _backgroundJobDispatcher;
 
-        public AuthService(IUserRepository userRepository, IUnitOfWork unitOfWork, IJwtTokenService jwtTokenService, IUserService userService, IMapper mapper, IOptions<JwtSettings> jwtOptions, IClientInfoService clientInfoService, IHashingService hashingService, ILogger<AuthService>? logger = null, IBackgroundJobDispatcher? backgroundJobDispatcher = null)
+        public AuthService(IUserRepository userRepository, IUnitOfWork unitOfWork, IJwtTokenService jwtTokenService, IUserService userService, IMapper mapper, IOptions<JwtSettings> jwtOptions, IClientInfoService clientInfoService, IHashingService hashingService, ILogger<AuthService>? logger = null)
         {
             ArgumentNullException.ThrowIfNull(userRepository);
             ArgumentNullException.ThrowIfNull(unitOfWork);
@@ -49,68 +47,6 @@ namespace PutZige.Application.Services
             _jwtSettings = jwtOptions.Value;
             _clientInfoService = clientInfoService;
             _hashingService = hashingService;
-        }
-
-        public async Task<bool> VerifyEmailAsync(string email, string token, CancellationToken ct = default)
-        {
-            if (string.IsNullOrWhiteSpace(email)) throw new ArgumentException(ErrorMessages.Validation.EmailRequired, nameof(email));
-            if (string.IsNullOrWhiteSpace(token)) throw new ArgumentException("token is required", nameof(token));
-
-            var user = await _userRepository.GetByEmailAsync(email, ct);
-            if (user == null) throw new KeyNotFoundException(ErrorMessages.General.ResourceNotFound);
-
-            if (user.IsEmailVerified) throw new InvalidOperationException(ErrorMessages.Email.AlreadyVerified);
-
-            if (string.IsNullOrWhiteSpace(user.EmailVerificationToken) || user.EmailVerificationToken != token)
-                throw new InvalidOperationException(ErrorMessages.Email.TokenInvalid);
-
-            if (!user.EmailVerificationTokenExpiry.HasValue || user.EmailVerificationTokenExpiry.Value < DateTime.UtcNow)
-                throw new InvalidOperationException(ErrorMessages.Email.TokenExpired);
-
-            user.IsEmailVerified = true;
-            user.EmailVerificationToken = null;
-            user.EmailVerificationTokenExpiry = null;
-
-            await _unitOfWork.SaveChangesAsync(ct);
-
-            _logger?.LogInformation("Email verified for user {Email}", user.Email);
-
-            return true;
-        }
-
-        public async Task ResendVerificationEmailAsync(string email, CancellationToken ct = default)
-        {
-            if (string.IsNullOrWhiteSpace(email)) throw new ArgumentException(ErrorMessages.Validation.EmailRequired, nameof(email));
-
-            var user = await _userRepository.GetByEmailAsync(email, ct);
-            if (user == null) throw new KeyNotFoundException(ErrorMessages.General.ResourceNotFound);
-
-            if (user.IsEmailVerified) throw new InvalidOperationException(ErrorMessages.Email.AlreadyVerified);
-
-            var now = DateTime.UtcNow;
-            if (user.LastEmailVerificationSentAt.HasValue && user.LastEmailVerificationSentAt.Value.AddHours(1) > now && user.EmailVerificationSentCount >= 3)
-            {
-                throw new InvalidOperationException(ErrorMessages.Email.TooManyResendAttempts);
-            }
-
-            var token = _hashingService.GenerateSecureToken(32);
-            user.EmailVerificationToken = token;
-            user.EmailVerificationTokenExpiry = DateTime.UtcNow.AddDays(AppConstants.Security.EmailVerificationTokenExpirationDays);
-            user.EmailVerificationSentCount++;
-            user.LastEmailVerificationSentAt = now;
-
-            await _unitOfWork.SaveChangesAsync(ct);
-
-            // Enqueue background job
-            try
-            {
-                _backgroundJobDispatcher.EnqueueVerificationEmail(user.Email, user.Username, user.EmailVerificationToken!);
-            }
-            catch (System.Exception ex)
-            {
-                _logger?.LogError(ex, "Failed to enqueue resend verification email for {Email}", user.Email);
-                throw new InvalidOperationException(ErrorMessages.Email.EmailSendFailed);
-            }
         }
 
         public async Task<LoginResponse> LoginAsync(string identifier, string password, CancellationToken ct = default)

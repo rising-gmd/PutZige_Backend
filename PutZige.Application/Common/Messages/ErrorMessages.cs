@@ -83,14 +83,5 @@ namespace PutZige.Application.Common.Messages
             public const string PageSizeOutOfRange = "pageSize must be between 1 and the configured maximum";
             public const string SenderNotFound = "Sender not found";
         }
-
-        public static class Email
-        {
-            public const string TokenExpired = "Verification token has expired";
-            public const string TokenInvalid = "Invalid verification token";
-            public const string AlreadyVerified = "Email is already verified";
-            public const string TooManyResendAttempts = "Too many resend attempts. Try again later";
-            public const string EmailSendFailed = "Failed to send verification email";
-        }
     }
 }

@@ -102,9 +102,6 @@ namespace PutZige.Infrastructure.Data.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
-                    b.Property<int>("EmailVerificationSentCount")
-                        .HasColumnType("int");
-
                     b.Property<string>("EmailVerificationToken")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
@@ -141,9 +138,6 @@ namespace PutZige.Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
-
-                    b.Property<DateTime?>("LastEmailVerificationSentAt")
-                        .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("LastFailedLoginAttempt")
                         .HasColumnType("datetime2");

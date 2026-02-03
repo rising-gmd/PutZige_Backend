@@ -86,20 +86,9 @@ public static class DependencyInjection
         services.AddSingleton<IValidateOptions<HashingSettings>, HashingSettingsOptionsValidator>();
         services.AddScoped<IHashingService, HashingService>();
 
-        // Email settings and service
-        services.Configure<EmailSettings>(configuration.GetSection(EmailSettings.SectionName));
-        services.AddSingleton<IValidator<EmailSettings>, EmailSettingsValidator>();
-        services.AddSingleton<IValidateOptions<EmailSettings>, EmailSettingsOptionsValidator>();
-        services.AddScoped<IEmailService, EmailService>();
-
         // Connection mapping service used by SignalR hubs to avoid static state
         services.AddSingleton<IConnectionMappingService, ConnectionMappingService>();
-
-        // Register Hangfire background service types
-        services.AddScoped<EmailBackgroundService>();
-        services.AddScoped<IBackgroundJobDispatcher, HangfireBackgroundJobDispatcher>();
 
         return services;
     }
 }
-

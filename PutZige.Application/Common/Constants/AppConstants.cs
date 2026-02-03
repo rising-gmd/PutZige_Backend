@@ -44,13 +44,12 @@ namespace PutZige.Application.Common.Constants
         public static class Security
         {
             public const int BcryptWorkFactor = 12; // Good balance (2^12 = 4096 iterations)
-            public const int EmailVerificationTokenExpirationDays = 7;
+            public const int EmailVerificationTokenExpirationDays = 1;
             public const int PasswordResetTokenExpirationHours = 1;
             public const int RefreshTokenExpirationDays = 30;
             public const int AccessTokenExpirationMinutes = 15;
             public const int MaxLoginAttempts = 5;
             public const int LockoutDurationMinutes = 15;
-            public const int LockoutMinutes = 15;
         }
 
         public static class Http
