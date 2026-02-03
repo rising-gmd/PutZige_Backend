@@ -24,8 +24,9 @@ namespace PutZige.Application.Services
         private readonly ILogger<UserService>? _logger;
         private readonly IMapper _mapper;
         private readonly IHashingService _hashingService;
+        private readonly PutZige.Application.Interfaces.IBackgroundJobDispatcher _backgroundJobDispatcher;
 
-        public UserService(IUserRepository userRepository, IUnitOfWork unitOfWork, IMapper mapper, IHashingService hashingService, ILogger<UserService>? logger = null)
+        public UserService(IUserRepository userRepository, IUnitOfWork unitOfWork, IMapper mapper, IHashingService hashingService, PutZige.Application.Interfaces.IBackgroundJobDispatcher? backgroundJobDispatcher = null, ILogger<UserService>? logger = null)
         {
             ArgumentNullException.ThrowIfNull(userRepository);
             ArgumentNullException.ThrowIfNull(unitOfWork);
@@ -37,6 +38,7 @@ namespace PutZige.Application.Services
             _mapper = mapper;
             _logger = logger;
             _hashingService = hashingService;
+            _backgroundJobDispatcher = backgroundJobDispatcher ?? new PutZige.Application.Services.NoOpBackgroundJobDispatcher();
         }
 
         /// <summary>
@@ -91,7 +93,15 @@ namespace PutZige.Application.Services
 
             _logger?.LogInformation("User entity created - UserId: {UserId}", user.Id);
 
-            // TODO: Send verification email to {user.Email} with token {user.EmailVerificationToken}
+            // Queue verification email (non-blocking)
+            try
+            {
+                _backgroundJobDispatcher.EnqueueVerificationEmail(user.Email, user.Username, user.EmailVerificationToken!);
+            }
+            catch (System.Exception ex)
+            {
+                _logger?.LogError(ex, "Failed to enqueue verification email for user {Email}", user.Email);
+            }
 
             // Map to response DTO
             var response = _mapper.Map<RegisterUserResponse>(user);
