@@ -15,7 +15,6 @@ using System;
 using System.Linq;
 using PutZige.Application.Interfaces;
 using PutZige.Infrastructure.Services;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using PutZige.Application.Settings;
 using PutZige.Application.Validators;
@@ -98,6 +97,9 @@ public static class DependencyInjection
         // Register Hangfire background service types
         services.AddScoped<EmailBackgroundService>();
         services.AddScoped<IBackgroundJobDispatcher, HangfireBackgroundJobDispatcher>();
+
+        // Time abstraction for testability (Singleton - stateless, thread-safe)
+        services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
 
         return services;
     }

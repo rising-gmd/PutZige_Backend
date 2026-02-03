@@ -40,7 +40,7 @@ namespace PutZige.Application.Tests.Services
 
         private AuthService CreateService()
         {
-            return new AuthService(_userRepo.Object, _uow.Object, new TestJwtTokenService(), _userService.Object, new AutoMapper.MapperConfiguration(cfg => { }).CreateMapper(), Options.Create(_jwtSettings), _mockClientInfo.Object, _mockHashingService.Object, _logger.Object, _backgroundDispatcher.Object);
+            return new AuthService(_userRepo.Object, _uow.Object, new TestJwtTokenService(), _userService.Object, new AutoMapper.MapperConfiguration(cfg => { }).CreateMapper(), Options.Create(_jwtSettings), _mockClientInfo.Object, _mockHashingService.Object, new Mock<IDateTimeProvider>().Object, _logger.Object, _backgroundDispatcher.Object);
         }
 
         private User CreateUnverifiedUser(string email, string token, DateTime? expiry = null)
