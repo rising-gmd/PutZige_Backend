@@ -56,9 +56,11 @@ namespace PutZige.Application.Services
         public async Task<bool> VerifyEmailAsync(string email, string token, CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(email)) throw new ArgumentException(ErrorMessages.Validation.EmailRequired, nameof(email));
-            if (string.IsNullOrWhiteSpace(token)) throw new ArgumentException("token is required", nameof(token));
+
+            if (string.IsNullOrWhiteSpace(token)) throw new ArgumentException(ErrorMessages.Validation.TokenRequired, nameof(token));
 
             var user = await _userRepository.GetByEmailAsync(email, ct);
+
             if (user == null) throw new KeyNotFoundException(ErrorMessages.General.ResourceNotFound);
 
             if (user.IsEmailVerified) throw new InvalidOperationException(ErrorMessages.Email.AlreadyVerified);
@@ -240,7 +242,7 @@ namespace PutZige.Application.Services
 
         public async Task<RefreshTokenResponse> RefreshTokenAsync(string refreshToken, CancellationToken ct = default)
         {
-            if (string.IsNullOrWhiteSpace(refreshToken)) throw new ArgumentException("refreshToken is required", nameof(refreshToken));
+            if (string.IsNullOrWhiteSpace(refreshToken)) throw new ArgumentException(ErrorMessages.Validation.RefreshTokenRequired, nameof(refreshToken));
 
             var user = await _userRepository.GetByRefreshTokenAsync(refreshToken, ct);
             if (user == null || user.Session == null)

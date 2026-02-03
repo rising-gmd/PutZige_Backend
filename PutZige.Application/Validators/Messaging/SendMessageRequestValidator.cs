@@ -8,7 +8,9 @@ public class SendMessageRequestValidator : AbstractValidator<SendMessageRequest>
 {
     public SendMessageRequestValidator()
     {
-        RuleFor(x => x.ReceiverId).NotEmpty().WithName("receiverId");
-        RuleFor(x => x.MessageText).NotEmpty().WithName("messageText").MaximumLength(AppConstants.Messaging.MaxMessageLength);
+        RuleFor(x => x.ReceiverId).NotEmpty().WithName("receiverId").WithMessage(PutZige.Application.Common.Messages.ErrorMessages.Messaging.ReceiverIdRequired);
+        RuleFor(x => x.MessageText)
+            .NotEmpty().WithName("messageText").WithMessage(PutZige.Application.Common.Messages.ErrorMessages.Messaging.MessageTextRequired)
+            .MaximumLength(AppConstants.Messaging.MaxMessageLength).WithMessage(PutZige.Application.Common.Messages.ErrorMessages.Messaging.MessageTooLong);
     }
 }

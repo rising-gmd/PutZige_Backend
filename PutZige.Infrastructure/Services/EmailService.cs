@@ -39,13 +39,13 @@ public sealed class EmailService : IEmailService
 
         if (string.IsNullOrWhiteSpace(toEmail))
         {
-            throw new ArgumentException("toEmail is required", nameof(toEmail));
+            throw new ArgumentException(PutZige.Application.Common.Messages.ErrorMessages.Validation.TokenRequired, nameof(toEmail));
         }
 
         // Basic email format sanity check to fail fast for clearly invalid values
         if (!toEmail.Contains('@'))
         {
-            throw new FormatException("Invalid email address format.");
+            throw new FormatException(PutZige.Application.Common.Messages.ErrorMessages.Validation.EmailInvalidFormat);
         }
 
         // Rely on MailboxAddress.Parse to validate full format and throw FormatException for invalid inputs
@@ -123,7 +123,7 @@ public sealed class EmailService : IEmailService
         catch (OperationCanceledException)
         {
             _logger.LogError("Email send timed out for {to}", message.To.ToString());
-            throw new TimeoutException("Email send operation timed out.");
+            throw new TimeoutException(PutZige.Application.Common.Messages.ErrorMessages.Email.EmailSendTimeout);
         }
         catch (Exception ex)
         {
