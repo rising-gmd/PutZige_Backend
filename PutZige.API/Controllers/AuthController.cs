@@ -45,5 +45,20 @@ namespace PutZige.API.Controllers
             var response = await _authService.RefreshTokenAsync(request.RefreshToken, ct);
             return Ok(ApiResponse<RefreshTokenResponse>.Success(response, SuccessMessages.Authentication.TokenRefreshed));
         }
+
+        [HttpPost("verify-email")]
+        public async Task<ActionResult<ApiResponse<object>>> VerifyEmail([FromBody] PutZige.Application.DTOs.Auth.VerifyEmailRequest request, CancellationToken ct)
+        {
+            await _authService.VerifyEmailAsync(request.Email, request.Token, ct);
+            return Ok(ApiResponse<object>.Success(null, SuccessMessages.Authentication.EmailVerified));
+        }
+
+        [HttpPost("resend-verification")]
+        [EnableRateLimiting("api-general")]
+        public async Task<ActionResult<ApiResponse<object>>> ResendVerification([FromBody] PutZige.Application.DTOs.Auth.ResendVerificationRequest request, CancellationToken ct)
+        {
+            await _authService.ResendVerificationEmailAsync(request.Email, ct);
+            return Ok(ApiResponse<object>.Success(null, SuccessMessages.Authentication.VerificationEmailSent));
+        }
     }
 }
