@@ -29,6 +29,7 @@ public sealed class EmailService : IEmailService
     public async Task SendVerificationEmailAsync(string toEmail, string username, string verificationToken, CancellationToken ct = default)
     {
         var message = new MimeMessage();
+
         message.From.Add(new MailboxAddress(_settings.FromName ?? "", _settings.FromEmail));
 
         // Validate recipient email early to provide consistent exceptions and avoid attempting SMTP operations
@@ -99,6 +100,7 @@ public sealed class EmailService : IEmailService
         try
         {
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
             timeoutCts.CancelAfter(SendTimeoutMs);
 
             var secureSocket = _settings.EnableSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.Auto;
