@@ -3,6 +3,7 @@ using AutoMapper;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PutZige.Application.Common;
+using PutZige.Application.Common.Constants;
 using PutZige.Application.Common.Messages;
 using PutZige.Application.DTOs.Auth;
 using PutZige.Application.Interfaces;
@@ -26,8 +27,10 @@ namespace PutZige.Application.Services
         private readonly JwtSettings _jwtSettings;
         private readonly IClientInfoService _clientInfoService;
         private readonly IHashingService _hashingService;
+        private readonly IBackgroundJobDispatcher _backgroundJobDispatcher;
+        private readonly IDateTimeProvider _dateTimeProvider;
 
-        public AuthService(IUserRepository userRepository, IUnitOfWork unitOfWork, IJwtTokenService jwtTokenService, IUserService userService, IMapper mapper, IOptions<JwtSettings> jwtOptions, IClientInfoService clientInfoService, IHashingService hashingService, ILogger<AuthService>? logger = null)
+        public AuthService(IUserRepository userRepository, IUnitOfWork unitOfWork, IJwtTokenService jwtTokenService, IUserService userService, IMapper mapper, IOptions<JwtSettings> jwtOptions, IClientInfoService clientInfoService, IHashingService hashingService, IDateTimeProvider dateTimeProvider, ILogger<AuthService>? logger = null, IBackgroundJobDispatcher? backgroundJobDispatcher = null)
         {
             ArgumentNullException.ThrowIfNull(userRepository);
             ArgumentNullException.ThrowIfNull(unitOfWork);
@@ -37,6 +40,7 @@ namespace PutZige.Application.Services
             ArgumentNullException.ThrowIfNull(jwtOptions);
             ArgumentNullException.ThrowIfNull(clientInfoService);
             ArgumentNullException.ThrowIfNull(hashingService);
+            ArgumentNullException.ThrowIfNull(dateTimeProvider);
 
             _userRepository = userRepository;
             _unitOfWork = unitOfWork;
@@ -47,6 +51,79 @@ namespace PutZige.Application.Services
             _jwtSettings = jwtOptions.Value;
             _clientInfoService = clientInfoService;
             _hashingService = hashingService;
+            _dateTimeProvider = dateTimeProvider;
+            // Ensure a background job dispatcher is always available to avoid null refs when enqueueing jobs
+            _backgroundJobDispatcher = backgroundJobDispatcher ?? new NoOpBackgroundJobDispatcher();
+        }
+
+        // Backwards-compatible overload to avoid breaking existing callers/tests that don't provide IDateTimeProvider.
+        public AuthService(IUserRepository userRepository, IUnitOfWork unitOfWork, IJwtTokenService jwtTokenService, IUserService userService, IMapper mapper, IOptions<JwtSettings> jwtOptions, IClientInfoService clientInfoService, IHashingService hashingService, ILogger<AuthService>? logger = null, IBackgroundJobDispatcher? backgroundJobDispatcher = null)
+            : this(userRepository, unitOfWork, jwtTokenService, userService, mapper, jwtOptions, clientInfoService, hashingService, new SystemDateTimeProvider(), logger, backgroundJobDispatcher)
+        {
+        }
+
+        public async Task<bool> VerifyEmailAsync(string email, string token, CancellationToken ct = default)
+        {
+            if (string.IsNullOrWhiteSpace(email)) throw new ArgumentException(ErrorMessages.Validation.EmailRequired, nameof(email));
+
+            if (string.IsNullOrWhiteSpace(token)) throw new ArgumentException(ErrorMessages.Validation.TokenRequired, nameof(token));
+
+            var user = await _userRepository.GetByEmailAsync(email, ct);
+
+            if (user == null) throw new KeyNotFoundException(ErrorMessages.General.ResourceNotFound);
+
+            if (user.IsEmailVerified) throw new InvalidOperationException(ErrorMessages.Email.AlreadyVerified);
+
+            if (string.IsNullOrWhiteSpace(user.EmailVerificationToken) || user.EmailVerificationToken != token)
+                throw new InvalidOperationException(ErrorMessages.Email.TokenInvalid);
+
+            if (!user.EmailVerificationTokenExpiry.HasValue || user.EmailVerificationTokenExpiry.Value <= _dateTimeProvider.UtcNow)
+                throw new InvalidOperationException(ErrorMessages.Email.TokenExpired);
+
+            user.IsEmailVerified = true;
+            user.EmailVerificationToken = null;
+            user.EmailVerificationTokenExpiry = null;
+
+            await _unitOfWork.SaveChangesAsync(ct);
+
+            _logger?.LogInformation("Email verified for user {Email}", user.Email);
+
+            return true;
+        }
+
+        public async Task ResendVerificationEmailAsync(string email, CancellationToken ct = default)
+        {
+            if (string.IsNullOrWhiteSpace(email)) throw new ArgumentException(ErrorMessages.Validation.EmailRequired, nameof(email));
+
+            var user = await _userRepository.GetByEmailAsync(email, ct);
+            if (user == null) throw new KeyNotFoundException(ErrorMessages.General.ResourceNotFound);
+
+            if (user.IsEmailVerified) throw new InvalidOperationException(ErrorMessages.Email.AlreadyVerified);
+
+            var now = _dateTimeProvider.UtcNow;
+            if (user.LastEmailVerificationSentAt.HasValue && user.LastEmailVerificationSentAt.Value.AddHours(1) > now && user.EmailVerificationSentCount >= 3)
+            {
+                throw new InvalidOperationException(ErrorMessages.Email.TooManyResendAttempts);
+            }
+
+            var token = _hashingService.GenerateSecureToken(32);
+            user.EmailVerificationToken = token;
+            user.EmailVerificationTokenExpiry = _dateTimeProvider.UtcNow.AddDays(AppConstants.Security.EmailVerificationTokenExpirationDays);
+            user.EmailVerificationSentCount++;
+            user.LastEmailVerificationSentAt = now;
+
+            await _unitOfWork.SaveChangesAsync(ct);
+
+            // Enqueue background job
+            try
+            {
+                _backgroundJobDispatcher.EnqueueVerificationEmail(user.Email, user.Username, user.EmailVerificationToken!);
+            }
+            catch (System.Exception ex)
+            {
+                _logger?.LogError(ex, "Failed to enqueue resend verification email for {Email}", user.Email);
+                throw new InvalidOperationException(ErrorMessages.Email.EmailSendFailed);
+            }
         }
 
         public async Task<LoginResponse> LoginAsync(string identifier, string password, CancellationToken ct = default)
@@ -80,7 +157,7 @@ namespace PutZige.Application.Services
             }
 
             // Auto-unlock if lockout period has expired
-            if (user.IsLocked && user.LockedUntil.HasValue && user.LockedUntil <= DateTime.UtcNow)
+            if (user.IsLocked && user.LockedUntil.HasValue && user.LockedUntil <= _dateTimeProvider.UtcNow)
             {
                 user.IsLocked = false;
                 user.LockedUntil = null;
@@ -99,12 +176,12 @@ namespace PutZige.Application.Services
             if (!isValidPassword)
             {
                 user.FailedLoginAttempts++;
-                user.LastFailedLoginAttempt = DateTime.UtcNow;
+                user.LastFailedLoginAttempt = _dateTimeProvider.UtcNow;
 
                 if (user.FailedLoginAttempts >= AppConstants.Security.MaxLoginAttempts)
                 {
                     user.IsLocked = true;
-                    user.LockedUntil = DateTime.UtcNow.AddMinutes(AppConstants.Security.LockoutMinutes);
+                    user.LockedUntil = _dateTimeProvider.UtcNow.AddMinutes(AppConstants.Security.LockoutMinutes);
                     _logger?.LogWarning("Account locked due to {Attempts} failed attempts: {Identifier}", user.FailedLoginAttempts, identifier);
                 }
                 else
@@ -120,13 +197,13 @@ namespace PutZige.Application.Services
             // Successful login - reset lockout tracking
             user.FailedLoginAttempts = 0;
             user.LastFailedLoginAttempt = null;
-            user.LastLoginAt = DateTime.UtcNow;
+            user.LastLoginAt = _dateTimeProvider.UtcNow;
             user.LastLoginIp = _clientInfoService.GetIpAddress();
 
             // Generate and hash tokens
             var accessToken = _jwtTokenService.GenerateAccessToken(user.Id, user.Email, user.Username, _jwtSettings.AccessTokenExpiryMinutes, out var accessExpiresAt);
             var refreshToken = _jwtTokenService.GenerateRefreshToken();
-            var refreshExpiry = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryDays);
+            var refreshExpiry = _dateTimeProvider.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryDays);
             var hashedRefreshToken = await _hashingService.HashAsync(refreshToken, ct);
 
             // Update session
@@ -159,7 +236,7 @@ namespace PutZige.Application.Services
                     RefreshTokenSalt = tokenSalt,
                     RefreshTokenExpiry = expiry,
                     IsOnline = true,
-                    LastActiveAt = DateTime.UtcNow
+                    LastActiveAt = _dateTimeProvider.UtcNow
                 };
             }
             else
@@ -168,13 +245,13 @@ namespace PutZige.Application.Services
                 user.Session.RefreshTokenSalt = tokenSalt;
                 user.Session.RefreshTokenExpiry = expiry;
                 user.Session.IsOnline = true;
-                user.Session.LastActiveAt = DateTime.UtcNow;
+                user.Session.LastActiveAt = _dateTimeProvider.UtcNow;
             }
         }
 
         public async Task<RefreshTokenResponse> RefreshTokenAsync(string refreshToken, CancellationToken ct = default)
         {
-            if (string.IsNullOrWhiteSpace(refreshToken)) throw new ArgumentException("refreshToken is required", nameof(refreshToken));
+            if (string.IsNullOrWhiteSpace(refreshToken)) throw new ArgumentException(ErrorMessages.Validation.RefreshTokenRequired, nameof(refreshToken));
 
             var user = await _userRepository.GetByRefreshTokenAsync(refreshToken, ct);
             if (user == null || user.Session == null)
@@ -183,7 +260,7 @@ namespace PutZige.Application.Services
                 throw new InvalidOperationException(ErrorMessages.Authentication.InvalidRefreshToken);
             }
 
-            if (!user.Session.RefreshTokenExpiry.HasValue || user.Session.RefreshTokenExpiry < DateTime.UtcNow)
+            if (!user.Session.RefreshTokenExpiry.HasValue || user.Session.RefreshTokenExpiry < _dateTimeProvider.UtcNow)
             {
                 _logger?.LogWarning("Refresh token expired for user {UserId}", user.Id);
                 throw new InvalidOperationException(ErrorMessages.Authentication.InvalidRefreshToken);
@@ -200,14 +277,14 @@ namespace PutZige.Application.Services
             // Generate new tokens
             var accessToken = _jwtTokenService.GenerateAccessToken(user.Id, user.Email, user.Username, _jwtSettings.AccessTokenExpiryMinutes, out var accessExpiresAt);
             var newRefreshToken = _jwtTokenService.GenerateRefreshToken();
-            var newRefreshExpiry = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryDays);
+            var newRefreshExpiry = _dateTimeProvider.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryDays);
 
             var newHashed = await _hashingService.HashAsync(newRefreshToken, ct);
 
             user.Session.RefreshTokenHash = newHashed.Hash;
             user.Session.RefreshTokenSalt = newHashed.Salt;
             user.Session.RefreshTokenExpiry = newRefreshExpiry;
-            user.Session.LastActiveAt = DateTime.UtcNow;
+            user.Session.LastActiveAt = _dateTimeProvider.UtcNow;
 
             await _unitOfWork.SaveChangesAsync(ct);
 

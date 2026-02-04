@@ -11,6 +11,7 @@ namespace PutZige.Application.Validators.Auth
         {
             RuleFor(x => x.Identifier)
                 .NotEmpty().WithMessage(ErrorMessages.Validation.EmailRequired)
+                .EmailAddress().WithMessage(ErrorMessages.Validation.EmailInvalidFormat)
                 .WithName("identifier");
 
             RuleFor(x => x.Password)

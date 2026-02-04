@@ -20,8 +20,8 @@ namespace PutZige.Infrastructure.Services
         public JwtTokenService(IOptions<JwtSettings> options)
         {
             _settings = options?.Value ?? throw new ArgumentNullException(nameof(options));
-            if (string.IsNullOrWhiteSpace(_settings.Secret)) throw new ArgumentException("JWT secret is not configured.", nameof(_settings.Secret));
-            if (_settings.Secret.Length < 32) throw new ArgumentException("JWT secret must be at least 32 characters long.", nameof(_settings.Secret));
+            if (string.IsNullOrWhiteSpace(_settings.Secret)) throw new ArgumentException(PutZige.Application.Common.Messages.ErrorMessages.Security.JwtSecretNotConfigured, nameof(_settings.Secret));
+            if (_settings.Secret.Length < 32) throw new ArgumentException(PutZige.Application.Common.Messages.ErrorMessages.Security.JwtSecretTooShort, nameof(_settings.Secret));
             _keyBytes = Encoding.UTF8.GetBytes(_settings.Secret);
         }
 

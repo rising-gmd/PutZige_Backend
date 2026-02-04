@@ -28,6 +28,7 @@ namespace PutZige.Application.Tests.Services
         private readonly Mock<ILogger<AuthService>> _logger = new();
         private readonly Mock<IClientInfoService> _mockClientInfo = new();
         private readonly Mock<IHashingService> _mockHashingService = new();
+        private readonly Mock<IDateTimeProvider> _mockDateTime = new();
 
         private readonly JwtSettings _jwtSettings = new() { Secret = "TestSecretKeyThatIsLongEnough-1234567890", Issuer = "PutZige", Audience = "PutZige.Users", AccessTokenExpiryMinutes = 15, RefreshTokenExpiryDays = 7 };
 
@@ -40,6 +41,7 @@ namespace PutZige.Application.Tests.Services
 
             _mockHashingService.Setup(h => h.VerifyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
             _mockHashingService.Setup(h => h.HashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync((string s, CancellationToken ct) => new HashedValue("hash-"+s, "salt-"+s));
+            _mockDateTime.Setup(d => d.UtcNow).Returns(DateTime.UtcNow);
         }
 
         /// <summary>
@@ -66,7 +68,7 @@ namespace PutZige.Application.Tests.Services
             _userRepo.Setup(x => x.GetByUsernameWithSessionAsync(username, It.IsAny<CancellationToken>())).ReturnsAsync(user);
             _uow.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
-            var svc = new AuthService(_userRepo.Object, _uow.Object, CreateJwtService(), _userService.Object, _mapper.Object, Options.Create(_jwtSettings), _mockClientInfo.Object, _mockHashingService.Object, _logger.Object);
+            var svc = new AuthService(_userRepo.Object, _uow.Object, CreateJwtService(), _userService.Object, _mapper.Object, Options.Create(_jwtSettings), _mockClientInfo.Object, _mockHashingService.Object, _mockDateTime.Object, _logger.Object);
 
             // Act
             var result = await svc.LoginAsync(username, password, CancellationToken.None);
@@ -90,7 +92,7 @@ namespace PutZige.Application.Tests.Services
             var username = "nouser";
             _userRepo.Setup(x => x.GetByUsernameWithSessionAsync(username, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
 
-            var svc = new AuthService(_userRepo.Object, _uow.Object, CreateJwtService(), _userService.Object, _mapper.Object, Options.Create(_jwtSettings), _mockClientInfo.Object, _mockHashingService.Object, _logger.Object);
+            var svc = new AuthService(_userRepo.Object, _uow.Object, CreateJwtService(), _userService.Object, _mapper.Object, Options.Create(_jwtSettings), _mockClientInfo.Object, _mockHashingService.Object, _mockDateTime.Object, _logger.Object);
 
             // Act
             Func<Task> act = async () => await svc.LoginAsync(username, "any", CancellationToken.None);
@@ -123,7 +125,7 @@ namespace PutZige.Application.Tests.Services
             _userRepo.Setup(x => x.GetByEmailWithSessionAsync(email, It.IsAny<CancellationToken>())).ReturnsAsync(user);
             _uow.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
-            var svc = new AuthService(_userRepo.Object, _uow.Object, CreateJwtService(), _userService.Object, _mapper.Object, Options.Create(_jwtSettings), _mockClientInfo.Object, _mockHashingService.Object, _logger.Object);
+            var svc = new AuthService(_userRepo.Object, _uow.Object, CreateJwtService(), _userService.Object, _mapper.Object, Options.Create(_jwtSettings), _mockClientInfo.Object, _mockHashingService.Object, _mockDateTime.Object, _logger.Object);
 
             // Act
             var result = await svc.LoginAsync(email, password, CancellationToken.None);
@@ -164,7 +166,7 @@ namespace PutZige.Application.Tests.Services
             _userRepo.Setup(x => x.GetByEmailWithSessionAsync(email, It.IsAny<CancellationToken>())).ReturnsAsync(() => user);
             _uow.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
-            var svc = new AuthService(_userRepo.Object, _uow.Object, CreateJwtService(), _userService.Object, _mapper.Object, Options.Create(_jwtSettings), _mockClientInfo.Object, _mockHashingService.Object, _logger.Object);
+            var svc = new AuthService(_userRepo.Object, _uow.Object, CreateJwtService(), _userService.Object, _mapper.Object, Options.Create(_jwtSettings), _mockClientInfo.Object, _mockHashingService.Object, _mockDateTime.Object, _logger.Object);
 
             // Act & Assert: perform 4 failed attempts
             for (int i = 1; i <= 4; i++)
@@ -207,7 +209,7 @@ namespace PutZige.Application.Tests.Services
 
             _userRepo.Setup(x => x.GetByEmailWithSessionAsync(email, It.IsAny<CancellationToken>())).ReturnsAsync(user);
 
-            var svc = new AuthService(_userRepo.Object, _uow.Object, CreateJwtService(), _userService.Object, _mapper.Object, Options.Create(_jwtSettings), _mockClientInfo.Object, _mockHashingService.Object, _logger.Object);
+            var svc = new AuthService(_userRepo.Object, _uow.Object, CreateJwtService(), _userService.Object, _mapper.Object, Options.Create(_jwtSettings), _mockClientInfo.Object, _mockHashingService.Object, _mockDateTime.Object, _logger.Object);
 
             // Act
             Func<Task> act = async () => await svc.LoginAsync(email, password, CancellationToken.None);
@@ -226,7 +228,7 @@ namespace PutZige.Application.Tests.Services
             var email = "noexist@test.com";
             _userRepo.Setup(x => x.GetByEmailWithSessionAsync(email, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
 
-            var svc = new AuthService(_userRepo.Object, _uow.Object, CreateJwtService(), _userService.Object, _mapper.Object, Options.Create(_jwtSettings), _mockClientInfo.Object, _mockHashingService.Object, _logger.Object);
+            var svc = new AuthService(_userRepo.Object, _uow.Object, CreateJwtService(), _userService.Object, _mapper.Object, Options.Create(_jwtSettings), _mockClientInfo.Object, _mockHashingService.Object, _mockDateTime.Object, _logger.Object);
 
             // Act
             Func<Task> act = async () => await svc.LoginAsync(email, "any", CancellationToken.None);

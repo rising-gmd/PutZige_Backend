@@ -43,6 +43,8 @@ namespace PutZige.Application.Common.Messages
 
             public const string ConfirmPasswordRequired = "Password confirmation is required.";
             public const string PasswordsDoNotMatch = "Passwords do not match.";
+            public const string TokenRequired = "Token is required.";
+            public const string RefreshTokenRequired = "Refresh token is required.";
         }
 
         public static class General
@@ -82,6 +84,22 @@ namespace PutZige.Application.Common.Messages
             public const string PageNumberOutOfRange = "pageNumber must be greater than zero";
             public const string PageSizeOutOfRange = "pageSize must be between 1 and the configured maximum";
             public const string SenderNotFound = "Sender not found";
+        }
+
+        public static class Email
+        {
+            public const string TokenExpired = "Verification token has expired";
+            public const string TokenInvalid = "Invalid verification token";
+            public const string AlreadyVerified = "Email is already verified";
+            public const string TooManyResendAttempts = "Too many resend attempts. Try again later";
+            public const string EmailSendFailed = "Failed to send verification email";
+            public const string EmailSendTimeout = "Email send operation timed out.";
+        }
+
+        public static class Security
+        {
+            public const string JwtSecretNotConfigured = "JWT secret is not configured.";
+            public const string JwtSecretTooShort = "JWT secret must be at least 32 characters long.";
         }
     }
 }
