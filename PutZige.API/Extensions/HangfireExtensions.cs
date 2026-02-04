@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Hangfire.Dashboard;
 using Microsoft.Extensions.DependencyInjection;
 using PutZige.API.Filters;
+using PutZige.Infrastructure.Settings;
 
 namespace PutZige.API.Extensions;
 
@@ -11,11 +12,13 @@ public static class HangfireExtensions
 {
     public static IServiceCollection AddHangfireConfiguration(this IServiceCollection services, IConfiguration config)
     {
+        var connectionString = config.GetSection(DatabaseSettings.SectionName).Get<DatabaseSettings>()?.ConnectionString;
+
         services.AddHangfire(configuration => configuration
             .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
             .UseSimpleAssemblyNameTypeSerializer()
             .UseRecommendedSerializerSettings()
-            .UseSqlServerStorage(config.GetConnectionString("Default")));
+            .UseSqlServerStorage(connectionString));
 
         services.AddHangfireServer(options =>
         {
