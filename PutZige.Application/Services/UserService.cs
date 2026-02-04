@@ -24,19 +24,30 @@ namespace PutZige.Application.Services
         private readonly ILogger<UserService>? _logger;
         private readonly IMapper _mapper;
         private readonly IHashingService _hashingService;
+        private readonly PutZige.Application.Interfaces.IBackgroundJobDispatcher _backgroundJobDispatcher;
+        private readonly IDateTimeProvider _dateTimeProvider;
 
-        public UserService(IUserRepository userRepository, IUnitOfWork unitOfWork, IMapper mapper, IHashingService hashingService, ILogger<UserService>? logger = null)
+        public UserService(IUserRepository userRepository, IUnitOfWork unitOfWork, IMapper mapper, IHashingService hashingService, IDateTimeProvider dateTimeProvider, PutZige.Application.Interfaces.IBackgroundJobDispatcher? backgroundJobDispatcher = null, ILogger<UserService>? logger = null)
         {
             ArgumentNullException.ThrowIfNull(userRepository);
             ArgumentNullException.ThrowIfNull(unitOfWork);
             ArgumentNullException.ThrowIfNull(mapper);
             ArgumentNullException.ThrowIfNull(hashingService);
+            ArgumentNullException.ThrowIfNull(dateTimeProvider);
 
             _userRepository = userRepository;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _logger = logger;
             _hashingService = hashingService;
+            _backgroundJobDispatcher = backgroundJobDispatcher ?? new PutZige.Application.Services.NoOpBackgroundJobDispatcher();
+            _dateTimeProvider = dateTimeProvider;
+        }
+
+        // Backwards-compatible overload for tests/consumers that don't provide IDateTimeProvider yet
+        public UserService(IUserRepository userRepository, IUnitOfWork unitOfWork, IMapper mapper, IHashingService hashingService, PutZige.Application.Interfaces.IBackgroundJobDispatcher? backgroundJobDispatcher = null, ILogger<UserService>? logger = null)
+            : this(userRepository, unitOfWork, mapper, hashingService, new PutZige.Application.Services.SystemDateTimeProvider(), backgroundJobDispatcher, logger)
+        {
         }
 
         /// <summary>
@@ -76,9 +87,9 @@ namespace PutZige.Application.Services
                 PasswordHash = hashed.Hash,
                 PasswordSalt = hashed.Salt,
                 EmailVerificationToken = token,
-                EmailVerificationTokenExpiry = DateTime.UtcNow.AddDays(AppConstants.Security.EmailVerificationTokenExpirationDays),
+                EmailVerificationTokenExpiry = _dateTimeProvider.UtcNow.AddDays(AppConstants.Security.EmailVerificationTokenExpirationDays),
                 IsEmailVerified = false,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = _dateTimeProvider.UtcNow
             };
 
             _logger?.LogInformation("Creating user entity - Email: {Email}", email);
@@ -91,7 +102,15 @@ namespace PutZige.Application.Services
 
             _logger?.LogInformation("User entity created - UserId: {UserId}", user.Id);
 
-            // TODO: Send verification email to {user.Email} with token {user.EmailVerificationToken}
+            // Queue verification email (non-blocking)
+            try
+            {
+                _backgroundJobDispatcher.EnqueueVerificationEmail(user.Email, user.Username, user.EmailVerificationToken!);
+            }
+            catch (System.Exception ex)
+            {
+                _logger?.LogError(ex, "Failed to enqueue verification email for user {Email}", user.Email);
+            }
 
             // Map to response DTO
             var response = _mapper.Map<RegisterUserResponse>(user);
@@ -127,7 +146,7 @@ namespace PutZige.Application.Services
             var user = await _userRepository.GetByIdAsync(userId, ct);
             if (user == null) throw new KeyNotFoundException(ErrorMessages.General.ResourceNotFound);
 
-            user.LastLoginAt = DateTime.UtcNow;
+            user.LastLoginAt = _dateTimeProvider.UtcNow;
             user.LastLoginIp = ipAddress;
             user.FailedLoginAttempts = 0;
 
@@ -143,7 +162,7 @@ namespace PutZige.Application.Services
                     RefreshTokenSalt = hashed.Salt,
                     RefreshTokenExpiry = refreshTokenExpiry,
                     IsOnline = true,
-                    LastActiveAt = DateTime.UtcNow
+                    LastActiveAt = _dateTimeProvider.UtcNow
                 };
                 // Attach session via repository Add if available
                 // Using DbContext tracking since we fetched user with GetByIdAsync
@@ -154,7 +173,7 @@ namespace PutZige.Application.Services
                 user.Session.RefreshTokenSalt = hashed.Salt;
                 user.Session.RefreshTokenExpiry = refreshTokenExpiry;
                 user.Session.IsOnline = true;
-                user.Session.LastActiveAt = DateTime.UtcNow;
+                user.Session.LastActiveAt = _dateTimeProvider.UtcNow;
             }
 
             await _unitOfWork.SaveChangesAsync(ct);

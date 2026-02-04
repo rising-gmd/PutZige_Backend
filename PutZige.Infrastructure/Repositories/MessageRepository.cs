@@ -25,14 +25,18 @@ public class MessageRepository : Repository<Message>, IMessageRepository
         if (pageNumber <= 0) throw new ArgumentOutOfRangeException(nameof(pageNumber));
         if (pageSize <= 0) throw new ArgumentOutOfRangeException(nameof(pageSize));
 
-        var query = _dbSet.Where(m => (m.SenderId == userId && m.ReceiverId == otherUserId) || (m.SenderId == otherUserId && m.ReceiverId == userId))
-                          .OrderByDescending(m => m.SentAt);
+        // Base filtered query (no ordering) for count and to avoid reapplying expensive operations
+        var baseQuery = _dbSet.Where(m => (m.SenderId == userId && m.ReceiverId == otherUserId) || (m.SenderId == otherUserId && m.ReceiverId == userId));
 
-        var totalCount = await query.CountAsync(ct).ConfigureAwait(false);
+        // Get total count without ordering for better performance
+        var totalCount = await baseQuery.CountAsync(ct).ConfigureAwait(false);
 
         var skip = (pageNumber - 1) * pageSize;
 
-        var messages = await query
+        // Apply ordering and paging, use AsNoTracking to avoid change-tracking overhead for read-only queries
+        var pageQuery = baseQuery.OrderByDescending(m => m.SentAt).AsNoTracking();
+
+        var messages = await pageQuery
             .Skip(skip)
             .Take(pageSize)
             .Select(m => new Message

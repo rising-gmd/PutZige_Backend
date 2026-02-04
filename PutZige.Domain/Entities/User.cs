@@ -14,6 +14,8 @@ namespace PutZige.Domain.Entities
         public bool IsEmailVerified { get; set; } = false;
         public string? EmailVerificationToken { get; set; }
         public DateTime? EmailVerificationTokenExpiry { get; set; }
+        public int EmailVerificationSentCount { get; set; } = 0;
+        public DateTime? LastEmailVerificationSentAt { get; set; }
 
         // Profile
         public string Username { get; set; } = null!;

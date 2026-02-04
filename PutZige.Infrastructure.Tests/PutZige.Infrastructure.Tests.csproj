@@ -30,6 +30,7 @@
 
 		<!-- Test Data Generation -->
 		<PackageReference Include="Bogus" />
+        <PackageReference Include="Moq" />
 
 		<!-- Database Testing -->
 		<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />

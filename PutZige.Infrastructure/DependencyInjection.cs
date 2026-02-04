@@ -15,7 +15,6 @@ using System;
 using System.Linq;
 using PutZige.Application.Interfaces;
 using PutZige.Infrastructure.Services;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using PutZige.Application.Settings;
 using PutZige.Application.Validators;
@@ -86,9 +85,23 @@ public static class DependencyInjection
         services.AddSingleton<IValidateOptions<HashingSettings>, HashingSettingsOptionsValidator>();
         services.AddScoped<IHashingService, HashingService>();
 
+        // Email settings and service
+        services.Configure<EmailSettings>(configuration.GetSection(EmailSettings.SectionName));
+        services.AddSingleton<IValidator<EmailSettings>, EmailSettingsValidator>();
+        services.AddSingleton<IValidateOptions<EmailSettings>, EmailSettingsOptionsValidator>();
+        services.AddScoped<IEmailService, EmailService>();
+
         // Connection mapping service used by SignalR hubs to avoid static state
         services.AddSingleton<IConnectionMappingService, ConnectionMappingService>();
+
+        // Register Hangfire background service types
+        services.AddScoped<EmailBackgroundService>();
+        services.AddScoped<IBackgroundJobDispatcher, HangfireBackgroundJobDispatcher>();
+
+        // Time abstraction for testability (Singleton - stateless, thread-safe)
+        services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
 
         return services;
     }
 }
+
