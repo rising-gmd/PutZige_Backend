@@ -29,7 +29,7 @@ public static class DependencyInjection
     /// <summary>
     /// Adds infrastructure services such as DbContext, repositories and settings validators.
     /// </summary>
-    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
+    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment, bool hangfireEnabled = false)
     {
         services.Configure<DatabaseSettings>(configuration.GetSection(DatabaseSettings.SectionName));
         services.AddSingleton<IValidator<DatabaseSettings>, DatabaseSettingsValidator>();
@@ -96,10 +96,18 @@ public static class DependencyInjection
 
         // Register Hangfire background service types
         services.AddScoped<EmailBackgroundService>();
-        services.AddScoped<IBackgroundJobDispatcher, HangfireBackgroundJobDispatcher>();
 
-        // Time abstraction for testability (Singleton - stateless, thread-safe)
-        services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
+        if (hangfireEnabled)
+        {
+            services.AddScoped<IBackgroundJobDispatcher, HangfireBackgroundJobDispatcher>();
+        }
+        else
+        {
+            services.AddScoped<IBackgroundJobDispatcher, NoOpBackgroundJobDispatcher>();
+        }
+
+            // Time abstraction for testability (Singleton - stateless, thread-safe)
+            services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
 
         return services;
     }

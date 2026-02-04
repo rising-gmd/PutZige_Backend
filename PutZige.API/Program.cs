@@ -1,4 +1,4 @@
-using FluentValidation.AspNetCore;
+﻿using FluentValidation.AspNetCore;
 using Microsoft.OpenApi;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -20,7 +20,6 @@ Log.Logger = new LoggerConfiguration()
 try
 {
     Log.Information("Starting PutZige API");
-
     var builder = WebApplication.CreateBuilder(args);
 
     // Configure logging
@@ -32,18 +31,21 @@ try
     builder.Services.AddAuthenticationConfiguration(builder.Configuration);
     builder.Services.AddCorsConfiguration(builder.Configuration, builder.Environment);
     builder.Services.AddApplicationServices();
-    builder.Services.AddInfrastructureServices(builder.Configuration, builder.Environment);
+    builder.Services.AddInfrastructureServices(builder.Configuration, builder.Environment, hangfireEnabled: true);
     builder.Services.AddRateLimitingConfiguration(builder.Configuration);
     builder.Services.AddSignalRConfiguration(builder.Configuration);
+    builder.Services.AddHangfireConfiguration(builder.Configuration);
 
     var app = builder.Build();
 
-    // Middleware pipeline
     app.ConfigureMiddlewarePipeline();
+
+    app.ConfigureHangfireDashboard();
 
     app.MapSignalRHubs();
 
     Log.Information("Application starting");
+
     app.Run();
 }
 catch (Exception ex) when (ex is not HostAbortedException)
