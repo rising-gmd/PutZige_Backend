@@ -53,7 +53,7 @@ public sealed class EmailService : IEmailService
         message.To.Add(mailbox);
         message.Subject = "Please verify your email";
 
-        var bodyHtml = await BuildVerificationHtmlAsync(username, verificationToken, ct).ConfigureAwait(false);
+        var bodyHtml = await BuildVerificationHtmlAsync(username, verificationToken, toEmail, ct).ConfigureAwait(false);
         var builder = new BodyBuilder {HtmlBody = bodyHtml};
         message.Body = builder.ToMessageBody();
 
@@ -66,7 +66,7 @@ public sealed class EmailService : IEmailService
         throw new NotImplementedException();
     }
 
-    private async Task<string> BuildVerificationHtmlAsync(string username, string verificationToken, CancellationToken ct)
+    private async Task<string> BuildVerificationHtmlAsync(string username, string verificationToken, string toEmail, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
 
@@ -82,7 +82,7 @@ public sealed class EmailService : IEmailService
         }
 
         var tokenEncoded = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(verificationToken));
-        var verificationLink = $"{_settings.VerificationLinkBaseUrl}?email={Uri.EscapeDataString(username)}&token={Uri.EscapeDataString(tokenEncoded)}";
+        var verificationLink = $"{_settings.VerificationLinkBaseUrl}?email={Uri.EscapeDataString(toEmail)}&token={Uri.EscapeDataString(tokenEncoded)}";
 
 
         var expiryHours = TimeSpan.FromDays(1).TotalHours; // keep default until constants wired
