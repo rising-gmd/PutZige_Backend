@@ -17,7 +17,6 @@ public sealed class EmailService : IEmailService
     private readonly EmailSettings _settings;
     private readonly ILogger<EmailService> _logger;
     private readonly string _templatePath;
-    private const int SendTimeoutMs = 5000; // 5 seconds
 
     public EmailService(IOptions<EmailSettings> options, ILogger<EmailService> logger)
     {
@@ -83,7 +82,8 @@ public sealed class EmailService : IEmailService
         }
 
         var tokenEncoded = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(verificationToken));
-        var verificationLink = new Uri(new Uri(_settings.VerificationLinkBaseUrl), $"/api/v1/auth/verify-email?email={Uri.EscapeDataString(username)}&token={Uri.EscapeDataString(tokenEncoded)}");
+        var verificationLink = $"{_settings.VerificationLinkBaseUrl}?email={Uri.EscapeDataString(username)}&token={Uri.EscapeDataString(tokenEncoded)}";
+
 
         var expiryHours = TimeSpan.FromDays(1).TotalHours; // keep default until constants wired
 
@@ -101,7 +101,7 @@ public sealed class EmailService : IEmailService
         {
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
-            timeoutCts.CancelAfter(SendTimeoutMs);
+            timeoutCts.CancelAfter(_settings.SendTimeoutMs);
 
             var secureSocket = _settings.EnableSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.Auto;
 
